@@ -113,7 +113,20 @@ body {
 }
 
 /* ── Section views (Home CoPilot, Claims/LC stats, Analytics bars) ─────────── */
-.home-copilot { max-width: 1000px; }
+.home-copilot { width: 100%; }
+/* Chat tabs (Chrome-style) */
+.chat-tabs { display: flex; align-items: center; gap: 4px; padding: 6px 10px 0; overflow-x: auto;
+  border-bottom: 1px solid var(--border); }
+.chat-tab { display: flex; align-items: center; gap: 8px; max-width: 180px; padding: 7px 10px;
+  font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap;
+  border: 1px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0; }
+.chat-tab:hover { color: var(--text); background: var(--card); }
+.chat-tab.active { color: var(--text); background: var(--panel); border-color: var(--border);
+  border-bottom: 1px solid var(--panel); margin-bottom: -1px; }
+.chat-tab .tab-label { overflow: hidden; text-overflow: ellipsis; }
+.chat-tab .tab-x { display: inline-flex; align-items: center; justify-content: center; width: 16px;
+  height: 16px; border-radius: 4px; font-size: 14px; line-height: 1; color: var(--muted); }
+.chat-tab .tab-x:hover { background: var(--border); color: var(--text); }
 .mini-stats { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .mini-stat { font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 20px;
   background: var(--card); border: 1px solid var(--border); color: var(--muted); }

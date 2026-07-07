@@ -289,7 +289,7 @@ def all_claims(limit: int = 200) -> List[Dict[str, Any]]:
     """Portfolio-wide claims (for the Claims section), joined to insured names."""
     sql = f"""
         SELECT c.claim_id, c.loss_date, c.loss_type, c.claim_status, c.total_incurred,
-               c.total_paid, c.total_reserves, c.litigation_status, c.loss_description,
+               c.total_paid, c.case_reserves, c.litigation_status, c.loss_description,
                i.company_name
         FROM {_fq('claims')} c
         LEFT JOIN {_fq('insureds')} i ON c.insured_id = i.insured_id
@@ -302,7 +302,7 @@ def all_claims(limit: int = 200) -> List[Dict[str, Any]]:
             "date": str(r.get("loss_date") or ""), "type": r.get("loss_type"),
             "status": r.get("claim_status"), "litigation": r.get("litigation_status"),
             "incurred": _money(r.get("total_incurred")), "paid": _money(r.get("total_paid")),
-            "reserves": _money(r.get("total_reserves")), "description": r.get("loss_description"),
+            "reserves": _money(r.get("case_reserves")), "description": r.get("loss_description"),
         } for r in rows]
     return [] if warehouse_ready() else _demo_all_claims()
 
