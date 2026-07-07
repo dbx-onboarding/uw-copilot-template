@@ -1,21 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "./api.js";
-import { Icon, KPI_ICONS, Spinner } from "./ui.jsx";
+import { Icon, Spinner } from "./ui.jsx";
 import Queue from "./Queue.jsx";
 import Detail from "./Detail.jsx";
+import { HomeView, ClaimsView, LossControlView, AnalyticsView, DocumentsView, SettingsView } from "./Views.jsx";
 
-const KPI_META = [
-  { key: "active_queue", label: "Active Queue", tag: "live" },
-  { key: "new_submissions", label: "New Submissions", tag: "live" },
-  { key: "high_risk", label: "High Risk Alerts", tag: "live" },
-  { key: "pending_referral", label: "Pending Referral", tag: "live" },
-  { key: "portfolio_score", label: "Portfolio Score", tag: "static" },
-];
-
-// Databricks-style left-rail navigation. "Dashboard" / "Submissions" show the
-// queue; the rest are workbench sections available in the full deployment.
+// Databricks-style left-rail navigation.
 const NAV = [
-  { key: "dashboard", label: "Dashboard", icon: Icon.grid },
+  { key: "home", label: "Home", icon: Icon.grid },
   { key: "submissions", label: "Submissions", icon: Icon.inbox },
   { key: "claims", label: "Claims", icon: Icon.folder },
   { key: "loss_control", label: "Loss Control", icon: Icon.shield },
@@ -23,7 +15,6 @@ const NAV = [
   { key: "documents", label: "Documents", icon: Icon.docs },
   { key: "settings", label: "Settings", icon: Icon.gear },
 ];
-const QUEUE_NAV = new Set(["dashboard", "submissions"]);
 
 const sessionId = crypto.randomUUID ? crypto.randomUUID() : String(Math.random());
 
@@ -32,7 +23,7 @@ export default function App() {
   const [subs, setSubs] = useState(null);
   const [kpis, setKpis] = useState({});
   const [selected, setSelected] = useState(null);
-  const [nav, setNav] = useState("dashboard");
+  const [nav, setNav] = useState("home");
   const [toasts, setToasts] = useState([]);
   const [helpOpen, setHelpOpen] = useState(false);
 
@@ -56,7 +47,7 @@ export default function App() {
   }, [me]);
 
   const live = me?.live_data;
-  const navLabel = NAV.find((x) => x.key === nav)?.label || "Dashboard";
+  const navLabel = NAV.find((x) => x.key === nav)?.label || "Home";
   const roleText = (me?.role || "underwriter").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   const goNav = (k) => { setNav(k); setSelected(null); };
@@ -125,33 +116,25 @@ export default function App() {
 
         <main className="main">
           {subs === null ? (
-            <Spinner label="Loading queue" />
+            <Spinner label="Loading" />
           ) : selected ? (
             <Detail summary={selected} sessionId={sessionId} toast={toast} onBack={() => setSelected(null)} />
-          ) : QUEUE_NAV.has(nav) ? (
-            <>
-              <div className="kpi-grid">
-                {KPI_META.map((k) => {
-                  const meta = KPI_ICONS[k.key];
-                  const IconC = meta.icon;
-                  return (
-                    <div className="kpi" key={k.key}>
-                      <div className="ico" style={{ background: meta.bg, color: meta.tint }}>
-                        <IconC width={18} height={18} />
-                      </div>
-                      <div className="val">{kpis[k.key] ?? "—"}</div>
-                      <div className="lbl">{k.label}</div>
-                      <div className={`kpi-tag ${k.tag}`}>
-                        {k.tag === "static" ? "static value for now" : "live · from queue"}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <Queue subs={subs} onOpen={setSelected} />
-            </>
+          ) : nav === "home" ? (
+            <HomeView kpis={kpis} sessionId={sessionId} toast={toast} />
+          ) : nav === "submissions" ? (
+            <Queue subs={subs} onOpen={setSelected} />
+          ) : nav === "claims" ? (
+            <ClaimsView />
+          ) : nav === "loss_control" ? (
+            <LossControlView />
+          ) : nav === "analytics" ? (
+            <AnalyticsView subs={subs} kpis={kpis} />
+          ) : nav === "documents" ? (
+            <DocumentsView />
+          ) : nav === "settings" ? (
+            <SettingsView />
           ) : (
-            <Placeholder label={navLabel} onBack={() => goNav("dashboard")} />
+            <Placeholder label={navLabel} onBack={() => goNav("home")} />
           )}
         </main>
       </div>

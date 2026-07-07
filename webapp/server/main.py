@@ -138,6 +138,26 @@ def similar(sub_id: str):
     return {"similar": data.similar_risks(detail)}
 
 
+@app.get("/api/claims")
+def all_claims_route():
+    return {"claims": data.all_claims()}
+
+
+@app.get("/api/loss-control")
+def loss_control_route():
+    return {"insureds": data.loss_control_overview()}
+
+
+@app.get("/api/documents")
+def all_documents_route():
+    return {"documents": data.documents_for("")}
+
+
+@app.get("/api/settings")
+def settings_route(request: Request):
+    return {**data.settings_info(), "role": identity(request)["role"]}
+
+
 @app.post("/api/chat")
 def chat(body: ChatBody, request: Request):
     ident = identity(request)
@@ -171,13 +191,26 @@ def _kpis(subs: List[Dict[str, Any]]) -> Dict[str, Any]:
     high = sum(1 for s in subs if s.get("risk") == "High")
     refs = sum(1 for s in subs if s.get("referral"))
     new = sum(1 for s in subs if s.get("status") == "New")
-    avg = int(sum(s.get("score") or 0 for s in subs) / n) if n else 0
+    # Average 3-year loss ratio across the queue (normalized to %).
+    lrs = []
+    for s in subs:
+        lr = s.get("loss_ratio")
+        if lr is None:
+            continue
+        lrs.append(lr * 100 if lr <= 1 else lr)
+    avg_lr = (sum(lrs) / len(lrs)) if lrs else 0
+    high_share = (high / n * 100) if n else 0
+    ref_share = (refs / n * 100) if n else 0
+    # Portfolio health score (0–100): starts at 100, penalized by average loss
+    # ratio and concentration of high-risk / referral accounts. Higher = healthier.
+    score = 100 - 0.5 * avg_lr - 0.5 * high_share - 0.2 * ref_share
+    portfolio_score = max(0, min(100, round(score)))
     return {
         "active_queue": n,
         "new_submissions": new,
         "high_risk": high,
         "pending_referral": refs,
-        "portfolio_score": avg,
+        "portfolio_score": portfolio_score,
     }
 
 

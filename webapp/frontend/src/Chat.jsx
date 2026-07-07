@@ -2,14 +2,15 @@ import React, { useEffect, useRef, useState } from "react";
 import { api } from "./api.js";
 import { Icon } from "./ui.jsx";
 
-const SUGGESTIONS = [
+const DEFAULT_SUGGESTIONS = [
   "Summarize the loss history",
   "What are the key risk drivers?",
   "Compare to similar accounts",
   "Any referral triggers here?",
 ];
 
-export default function Chat({ submission, sessionId, toast }) {
+export default function Chat({ submission, sessionId, toast, suggestions }) {
+  const SUGGESTIONS = suggestions && suggestions.length ? suggestions : DEFAULT_SUGGESTIONS;
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);

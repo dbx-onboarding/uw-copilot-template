@@ -285,6 +285,67 @@ def drivers_for(sub_id: str) -> List[Dict[str, Any]]:
     return [] if warehouse_ready() else _demo_drivers()
 
 
+def all_claims(limit: int = 200) -> List[Dict[str, Any]]:
+    """Portfolio-wide claims (for the Claims section), joined to insured names."""
+    sql = f"""
+        SELECT c.claim_id, c.loss_date, c.loss_type, c.claim_status, c.total_incurred,
+               c.total_paid, c.total_reserves, c.litigation_status, c.loss_description,
+               i.company_name
+        FROM {_fq('claims')} c
+        LEFT JOIN {_fq('insureds')} i ON c.insured_id = i.insured_id
+        ORDER BY c.total_incurred DESC LIMIT {int(limit)}
+    """
+    rows = _rows_as_dicts(_run_sql(sql))
+    if rows:
+        return [{
+            "claim_id": r.get("claim_id"), "company": r.get("company_name"),
+            "date": str(r.get("loss_date") or ""), "type": r.get("loss_type"),
+            "status": r.get("claim_status"), "litigation": r.get("litigation_status"),
+            "incurred": _money(r.get("total_incurred")), "paid": _money(r.get("total_paid")),
+            "reserves": _money(r.get("total_reserves")), "description": r.get("loss_description"),
+        } for r in rows]
+    return [] if warehouse_ready() else _demo_all_claims()
+
+
+def loss_control_overview(limit: int = 200) -> List[Dict[str, Any]]:
+    """Fleet safety / CSA posture per insured (for the Loss Control section)."""
+    sql = f"""
+        SELECT company_name, state_domicile, fleet_size, driver_count, safety_rating,
+               csa_unsafe_driving, csa_vehicle_maint, dashcam_coverage_pct,
+               telematics_provider, risk_tier
+        FROM {_fq('insureds')} ORDER BY csa_unsafe_driving DESC LIMIT {int(limit)}
+    """
+    rows = _rows_as_dicts(_run_sql(sql))
+    if rows:
+        return [{
+            "company": r.get("company_name"), "state": r.get("state_domicile"),
+            "fleet_size": r.get("fleet_size"), "driver_count": r.get("driver_count"),
+            "safety_rating": r.get("safety_rating"),
+            "csa_unsafe": r.get("csa_unsafe_driving"), "csa_maint": r.get("csa_vehicle_maint"),
+            "dashcam_pct": r.get("dashcam_coverage_pct"),
+            "telematics": r.get("telematics_provider") or "—", "risk_tier": r.get("risk_tier"),
+        } for r in rows]
+    return [] if warehouse_ready() else _demo_loss_control()
+
+
+def settings_info() -> Dict[str, Any]:
+    """Read-only configuration surface for the Settings section (no secrets)."""
+    cfg = get_config()
+
+    def g(k):
+        return getattr(cfg, k, None) if cfg else None
+
+    return {
+        "company": g("company_name") or "Atlas Commercial Insurance",
+        "catalog": g("catalog") or "—",
+        "schema": g("schema") or "—",
+        "warehouse_configured": bool(g("warehouse_id")),
+        "warehouse_ready": warehouse_ready(),
+        "serving_endpoint_configured": bool(g("serving_endpoint")),
+        "vector_index_configured": bool(g("vs_index")),
+    }
+
+
 def documents_for(sub_id: str) -> List[Dict[str, Any]]:
     # parsed_documents doesn't carry insured_id; show recent parsed docs if available.
     sql = f"""
@@ -579,6 +640,7 @@ def _insured_id_for(sub_id: str) -> Optional[str]:
 # ═══════════════════════════════════════════════════════════════════════════════
 def _demo_submissions() -> List[Dict[str, Any]]:
     return [
+        {"id": "SUB-26-12077", "name": "Ironhorse Freight Systems LLC", "broker": "Great Lakes Transport Insurance Brokers", "state": "IN", "lob": "Commercial Auto", "received": "2026-06-25", "status": "New", "score": 66, "risk": "Medium", "referral": False, "fleet_size": 8, "driver_count": 8, "loss_ratio": 0.66, "premium": "$118K", "annual_revenue": "$3.4M", "years_in_business": 9, "underwriter": "David Chen", "operation": "Regional", "commodity": "General Freight"},
         {"id": "SUB-2026-00147", "name": "ABC Trucking Co.", "broker": "Marsh McLennan", "state": "TX", "lob": "Commercial Auto", "received": "2026-07-07", "status": "New", "score": 92, "risk": "High", "referral": True, "fleet_size": 47, "driver_count": 58, "loss_ratio": 0.84, "premium": "$385K", "annual_revenue": "$12.4M", "years_in_business": 8, "underwriter": "Sarah Chen", "operation": "Long Haul", "commodity": "General Freight"},
         {"id": "SUB-2026-00146", "name": "Blue Ridge Freight LLC", "broker": "Aon", "state": "NC", "lob": "Commercial Auto", "received": "2026-07-07", "status": "New", "score": 88, "risk": "High", "referral": True, "fleet_size": 32, "driver_count": 40, "loss_ratio": 0.71, "premium": "$245K", "annual_revenue": "$8.7M", "years_in_business": 5, "underwriter": "Sarah Chen", "operation": "Regional", "commodity": "Refrigerated"},
         {"id": "SUB-2026-00145", "name": "Pacific Coast Carriers", "broker": "WTW", "state": "CA", "lob": "Commercial Auto", "received": "2026-07-07", "status": "In Review", "score": 68, "risk": "Medium", "referral": False, "fleet_size": 28, "driver_count": 33, "loss_ratio": 0.58, "premium": "$178K", "annual_revenue": "$6.2M", "years_in_business": 12, "underwriter": "Michael Torres", "operation": "Regional", "commodity": "General Freight"},
@@ -614,6 +676,25 @@ def _demo_drivers() -> List[Dict[str, Any]]:
         {"driver_id": "DRV-1043", "name": "Denise Kohler", "cdl_class": "A", "experience": 9, "mvr_points": 2, "status": "Active", "accidents": 0, "violations": 1, "hazmat": False, "telematics": 88.0},
         {"driver_id": "DRV-1044", "name": "Ray Alonzo", "cdl_class": "A", "experience": 3, "mvr_points": 5, "status": "Active", "accidents": 1, "violations": 2, "hazmat": False, "telematics": 64.2},
         {"driver_id": "DRV-1045", "name": "Tom Farrell", "cdl_class": "B", "experience": 21, "mvr_points": 0, "status": "Active", "accidents": 0, "violations": 0, "hazmat": True, "telematics": 95.1},
+    ]
+
+
+def _demo_all_claims() -> List[Dict[str, Any]]:
+    return [
+        {"claim_id": "CLM-25-4522103", "company": "Eastern Seaboard Logistics LLC", "date": "2025-07-19", "type": "Combined", "status": "Open", "litigation": "Pre-Suit", "incurred": "$280K", "paid": "$0", "reserves": "$280K", "description": "Swoop-and-squat suspected staged collision; multiple claimants from one vehicle. SIU engaged."},
+        {"claim_id": "CLM-25-3891045", "company": "Pacific Coast Carriers Inc", "date": "2025-08-18", "type": "Bodily Injury", "status": "Open", "litigation": "Suit Filed", "incurred": "$385K", "paid": "$120K", "reserves": "$265K", "description": "Third-party injury claim; litigation pending. Large open BI reserve under Reserve Committee review."},
+        {"claim_id": "CLM-23-6789012", "company": "Summit Petroleum Transport LLC", "date": "2023-03-22", "type": "Bodily Injury", "status": "Closed", "litigation": "Settled", "incurred": "$310K", "paid": "$310K", "reserves": "$0", "description": "Tanker rollover on highway; no spill. Third-party occupant hospitalized with fractures. Settled."},
+        {"claim_id": "CLM-26-7201452", "company": "Ironhorse Freight Systems LLC", "date": "2026-01-30", "type": "Cargo", "status": "Open", "litigation": "None", "incurred": "$42K", "paid": "$12K", "reserves": "$30K", "description": "Load shift damaged palletized goods in transit; salvage of undamaged units pursued."},
+        {"claim_id": "CLM-25-7201451", "company": "Ironhorse Freight Systems LLC", "date": "2025-04-12", "type": "Physical Damage", "status": "Closed", "litigation": "None", "incurred": "$28K", "paid": "$28K", "reserves": "$0", "description": "Low-speed rear-end on I-70; bumper and trailer door damage. Clear liability, insured at fault."},
+    ]
+
+
+def _demo_loss_control() -> List[Dict[str, Any]]:
+    return [
+        {"company": "Eastern Seaboard Logistics LLC", "state": "NJ", "fleet_size": 55, "driver_count": 60, "safety_rating": "Conditional", "csa_unsafe": 52.1, "csa_maint": 55.3, "dashcam_pct": 65.0, "telematics": "KeepTruckin", "risk_tier": "Borderline"},
+        {"company": "Lone Star Hauling Partners", "state": "TX", "fleet_size": 18, "driver_count": 20, "safety_rating": "Satisfactory", "csa_unsafe": 42.7, "csa_maint": 38.9, "dashcam_pct": 45.0, "telematics": "—", "risk_tier": "Borderline"},
+        {"company": "Ironhorse Freight Systems LLC", "state": "IN", "fleet_size": 8, "driver_count": 8, "safety_rating": "Satisfactory", "csa_unsafe": 48.0, "csa_maint": 33.0, "dashcam_pct": 80.0, "telematics": "Samsara", "risk_tier": "Acceptable"},
+        {"company": "Heartland Express Logistics", "state": "IL", "fleet_size": 85, "driver_count": 102, "safety_rating": "Satisfactory", "csa_unsafe": 22.4, "csa_maint": 18.7, "dashcam_pct": 92.0, "telematics": "Samsara", "risk_tier": "Preferred"},
     ]
 
 
