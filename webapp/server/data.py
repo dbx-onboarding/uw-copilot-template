@@ -154,6 +154,7 @@ def submission_queue() -> List[Dict[str, Any]]:
             "driver_count": r.get("driver_count"),
             "loss_ratio": lr_dec,
             "premium": _money(r.get("quoted_premium") or r.get("expiring_premium")),
+            "premium_label": "Quoted Premium" if r.get("quoted_premium") else "Expiring Premium",
             "underwriter": r.get("underwriter"),
             "operation": r.get("primary_operation"),
             "commodity": r.get("primary_commodity"),

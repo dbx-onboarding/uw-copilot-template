@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: uw-copilot
+    env: python
+    branch: update-app
+    buildCommand: |
+      pip install -r requirements.txt &&
+      npm --prefix webapp/frontend install &&
+      npm --prefix webapp/frontend run build
+    startCommand: cd webapp && python -m uvicorn server.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABRICKS_HOST
+        value: https://dbc-9c8b157f-c542.cloud.databricks.com
+      - key: DATABRICKS_TOKEN
+        sync: false

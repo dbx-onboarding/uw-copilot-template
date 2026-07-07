@@ -114,6 +114,7 @@ export default function Detail({ summary, sessionId, onBack, toast }) {
 function Overview({ detail, a, verdict, conf, decided, decide }) {
   const snap = [
     ["Insured", detail.name],
+    ["Status", detail.status],
     ["Operation", detail.operation || "Commercial Auto"],
     ["Commodity", detail.commodity],
     ["Fleet Size", detail.fleet_size],
@@ -122,7 +123,7 @@ function Overview({ detail, a, verdict, conf, decided, decide }) {
     ["Annual Revenue", detail.annual_revenue],
     ["Years in Business", detail.years_in_business],
     ["State", detail.state],
-    ["Premium", detail.premium],
+    [detail.premium_label || "Premium", detail.premium],
     ["Underwriter", detail.underwriter],
   ].filter(([, v]) => v != null && v !== "");
 

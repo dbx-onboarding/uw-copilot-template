@@ -30,7 +30,7 @@ export function ScoreBar({ score }) {
 }
 
 export const pct = (v) =>
-  v == null ? "—" : v <= 1 ? `${Math.round(v * 100)}%` : `${Math.round(Math.min(v, 100))}%`;
+  v == null ? "—" : v <= 1 ? `${Math.floor(v * 100)}%` : `${Math.floor(Math.min(v, 100))}%`;
 
 export function Spinner({ label }) {
   return (
