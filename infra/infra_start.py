@@ -24,6 +24,16 @@ if _src_path not in sys.path:
 
 # COMMAND ----------
 
+# DBTITLE 1,Install deps
+# MAGIC %pip install pyyaml databricks-ai-search mlflow databricks-sdk -q
+
+# COMMAND ----------
+
+# DBTITLE 1,Restart Python
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
 # DBTITLE 1,Skip restart
 # Python restart not needed — sys.path set above.
 

@@ -5,9 +5,8 @@ resources:
     pipeline-setup:
       name: uw-copilot-pipeline-setup
       description: >
-        One-time full setup: creates schema and tables, bulk-ingests historical
-        documents, builds Vector Search index, deploys the RAG chain and App.
-        Run manually on day 1 and after major structural changes.
+        One-time full setup: creates schema and tables, bulk-ingests historical documents, builds Vector Search index, deploys the RAG chain and App. Run manually on day 1 and after major structural changes.
+
       tasks:
         - task_key: create-schema
           notebook_task:
@@ -66,16 +65,16 @@ resources:
     intake:
       name: uw-copilot-intake
       description: >
-        Runs every 15 minutes. Auto Loader picks up new files from S3,
-        parses with ai_parse_document(), chunks, and appends to Vector Search.
+        Runs every 15 minutes. Auto Loader picks up new files from S3, parses with ai_parse_document(), chunks, and appends to Vector Search.
+
       schedule:
         quartz_cron_expression: "0 */15 * * * ?"
         timezone_id: "America/New_York"
-        pause_status: UNPAUSED
+        pause_status: PAUSED
       tasks:
         - task_key: run-intake
           notebook_task:
-            notebook_path: ${var.bundle_ws_path}/rag_pipeline/01b_ingest_stream
+            notebook_path: ../rag_pipeline/01b_ingest_stream.py
           environment_key: default
       environments:
         - environment_key: default
@@ -91,8 +90,8 @@ resources:
     infra-start:
       name: uw-copilot-infra-start
       description: >
-        Recreates Vector Search endpoint, syncs index from Delta,
-        and recreates the Model Serving endpoint. Runs at 8 AM weekdays.
+        Recreates Vector Search endpoint, syncs index from Delta, and recreates the Model Serving endpoint. Runs at 8 AM weekdays.
+
       schedule:
         quartz_cron_expression: "0 40 7 ? * MON-FRI *"
         timezone_id: "America/New_York"
@@ -115,8 +114,8 @@ resources:
     infra-stop:
       name: uw-copilot-infra-stop
       description: >
-        Pauses Vector Search endpoint and Model Serving endpoint.
-        Runs at 8 PM weekdays to reduce overnight costs.
+        Pauses Vector Search endpoint and Model Serving endpoint. Runs at 8 PM weekdays to reduce overnight costs.
+
       schedule:
         quartz_cron_expression: "0 0 20 ? * MON-FRI *"
         timezone_id: "America/New_York"
@@ -138,8 +137,8 @@ resources:
     app-deploy:
       name: uw-copilot-app-deploy
       description: >
-        Redeploys the Databricks App. Run manually after changes
-        to app/app.py or app/app.yaml.
+        Redeploys the Databricks App. Run manually after changes to app/app.py or app/app.yaml.
+
       tasks:
         - task_key: deploy-app
           notebook_task:
