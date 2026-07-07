@@ -1,0 +1,83 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  UW CoPilot — Guardrail Configuration
+#  Applied to every LLM response in priority order (1 = highest priority).
+#  A BLOCK at any priority terminates the pipeline immediately.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+guardrails:
+
+  # Priority 1: Prevent binding opinions — highest priority, no exceptions
+  - name: binding_opinion_blocker
+    priority: 1
+    action: BLOCK
+    description: "Prevents the AI from approving, declining, or binding any risk"
+    trigger_phrases:
+      - "I approve this"
+      - "coverage is bound"
+      - "you are approved"
+      - "policy is bound"
+      - "I decline this"
+      - "coverage is declined"
+      - "I can bind"
+      - "risk is accepted"
+    blocked_message: |
+      I cannot approve, decline, bind, or quote coverage. All underwriting
+      decisions require human authority. Please review the relevant guidelines
+      and consult your underwriting team.
+
+  # Priority 2: Filter prohibited topics
+  - name: prohibited_topic_filter
+    priority: 2
+    action: BLOCK
+    prohibited_topics:
+      - competitor_pricing
+      - legal_advice
+      - employment_advice
+      - discriminatory_risk_criteria
+      - regulatory_violations
+    blocked_message: |
+      I cannot assist with that topic. For legal questions, please consult
+      legal counsel. For regulatory guidance, refer to your compliance team.
+
+  # Priority 3: Redact PII from responses
+  - name: pii_redactor
+    priority: 3
+    action: REDACT
+    patterns:
+      - name: SSN
+        regex: '\b\d{3}-\d{2}-\d{4}\b'
+        replacement: "[SSN REDACTED]"
+      - name: CDL_NUMBER
+        regex: '\b[A-Z]{1,2}\d{6,9}\b'
+        replacement: "[CDL REDACTED]"
+      - name: DATE_OF_BIRTH
+        regex: '\b(0[1-9]|1[0-2])/(0[1-9]|[12]\d|3[01])/(19|20)\d{2}\b'
+        replacement: "[DOB REDACTED]"
+      - name: PHONE_NUMBER
+        regex: '\b(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}\b'
+        replacement: "[PHONE REDACTED]"
+
+  # Priority 4: Append coverage disclaimer when policy language is interpreted
+  - name: coverage_disclaimer
+    priority: 4
+    action: APPEND
+    trigger_topics:
+      - coverage_interpretation
+      - policy_terms_explanation
+      - exclusion_analysis
+    disclaimer: |
+
+      ---
+      *This response is for informational purposes only and does not constitute
+      a legal interpretation of policy language. Coverage determinations require
+      review of the actual policy form, endorsements, and applicable jurisdiction
+      law by a qualified professional.*
+
+  # Priority 5: Remind user to verify citations
+  - name: citation_enforcer
+    priority: 5
+    action: APPEND_IF_NO_CITATION
+    reminder: |
+
+      *Please verify this information against the source documents in your
+      document management system.*

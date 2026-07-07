@@ -1,0 +1,131 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  UW CoPilot — Company Configuration
+#  Reference implementation: Atlas Commercial Insurance
+#
+#  INSTRUCTIONS:
+#    1. Replace all Atlas-specific values with your company's details.
+#    2. The naming convention is automatic — only set short_name and domain.
+#    3. Update doc_categories to match your S3 subfolder structure.
+#    4. Update rbac to match your access control requirements.
+#
+#  NAMING CONVENTION (do not override these manually):
+#    {short_name}_{domain} drives all resource names automatically.
+#    atlas + insurance → schema: atlas_insurance_rag
+#                        vs_endpoint: atlas_insurance_vs_endpoint
+#                        serving_endpoint: atlas_insurance_rag_endpoint
+#                        app: atlas_insurance_uw_copilot_app
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Company Identity ─────────────────────────────────────────────────────────
+company:
+  name:       "Atlas Commercial Insurance"   # Full display name used in the UI and prompts
+  short_name: "atlas"                        # Short identifier — lowercase, no spaces, no special chars
+  domain:     "insurance"                    # Domain identifier — lowercase, no spaces
+
+# ─── Databricks Unity Catalog ─────────────────────────────────────────────────
+catalog: "atlas"                             # UC catalog where all tables and models are created
+
+# ─── SQL Warehouse (for App queries and NL-to-SQL) ────────────────────────────
+# Find your warehouse ID: SQL → SQL Warehouses → click your warehouse → Connection details
+warehouse_id: "a829316f6b992da1"             # dbdemos-shared-endpoint (Small PRO)
+
+
+# ─── Submission Intake ────────────────────────────────────────────────────────
+# volume_name: UC Volume created automatically under {catalog}.{schema} on first run.
+# Upload PDFs into subfolders matching doc_categories ids, e.g.:
+#   /Volumes/{catalog}/{schema}/raw_documents/01_uw_guidelines/file.pdf
+intake:
+  volume_name: "raw_documents"
+  volume_path: "/Volumes/atlas/commercial_insurance_rag/raw_documents"  # pre-existing corpus (1,516 PDFs)
+  schedule:    "*/15 * * * *"               # Cron expression for intake job (every 15 minutes)
+
+# ─── AI Models ────────────────────────────────────────────────────────────────
+models:
+  chat:      "databricks-claude-sonnet-4"    # LLM for generation — must be available in your workspace
+  embedding: "databricks-gte-large-en"       # Embedding model — used for chunking and similarity search
+
+# ─── Document Chunking ────────────────────────────────────────────────────────
+chunking:
+  parent_size: 2500    # Characters per parent chunk (context window for LLM)
+  child_size:  600     # Characters per child chunk (retrieval unit)
+  overlap:     100     # Character overlap between adjacent chunks
+
+# ─── Historical Similarity Search ─────────────────────────────────────────────
+similarity:
+  threshold:   0.75    # Minimum cosine similarity score to include a match (0.0–1.0)
+  max_results: 10      # Maximum similar accounts to surface in the Workbench
+
+# ─── Document Categories ──────────────────────────────────────────────────────
+# Each entry corresponds to one subfolder in the intake volume.
+# id:    must match the S3 subfolder name exactly (case-sensitive)
+# label: display name shown in the Workbench and used in rbac rules
+doc_categories:
+  - id: "00_reference"
+    label: "Reference Materials"
+  - id: "01_underwriting"
+    label: "Underwriting Guidelines"
+  - id: "02_claims"
+    label: "Claims Procedures"
+  - id: "03_loss_control"
+    label: "Loss Control"
+  - id: "04_authority"
+    label: "Authority & Limits"
+  - id: "05_product_guides"
+    label: "Product Guides"
+  - id: "06_policies"
+    label: "Policy Documents"
+  - id: "07_submissions"
+    label: "Submissions"
+  - id: "08_loss_runs"
+    label: "Loss Runs"
+  - id: "09_claim_files"
+    label: "Claim Files"
+  - id: "10_fleet_inspections"
+    label: "Fleet Inspections"
+  - id: "11_loss_control_reports"
+    label: "Loss Control Reports"
+  - id: "12_emails"
+    label: "Email Correspondence"
+  - id: "13_underwriter_notes"
+    label: "Underwriter Notes"
+  - id: "14_meeting_minutes"
+    label: "Meeting Minutes"
+  - id: "15_regulatory"
+    label: "Regulatory & Compliance"
+
+# ─── Role-Based Access Control ────────────────────────────────────────────────
+# Use ["all"] to grant access to all document categories.
+# Use a list of category labels (matching label: above) for restricted access.
+# Enforced at the Vector Search query layer — not the application layer.
+rbac:
+  underwriter:
+    - "all"
+  senior_underwriter:
+    - "all"
+  executive:
+    - "all"
+  claims_adjuster:
+    - "Claims Procedures"
+    - "Claim Files"
+    - "Loss Runs"
+    - "Regulatory & Compliance"
+    - "Product Guides"
+  claims_director:
+    - "Claims Procedures"
+    - "Claim Files"
+    - "Loss Runs"
+    - "Regulatory & Compliance"
+    - "Meeting Minutes"
+  broker:
+    - "Product Guides"
+    - "Underwriting Guidelines"
+    - "Policy Documents"
+  loss_control:
+    - "Fleet Inspections"
+    - "Loss Control"
+    - "Loss Control Reports"
+    - "Reference Materials"
+  compliance_officer:
+    - "Regulatory & Compliance"
+    - "Policy Documents"
+    - "Claims Procedures"

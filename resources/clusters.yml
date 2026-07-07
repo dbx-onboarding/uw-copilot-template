@@ -1,0 +1,19 @@
+# clusters.yml
+#
+# Jobs in this repo use Databricks Serverless compute (defined via
+# the `environments:` spec in resources/jobs.yml).
+# This file is a reference for teams that need to run on job clusters
+# (e.g. workspaces where serverless is not available or GPU is needed).
+#
+# To use a job cluster, add this block to a task in jobs.yml and
+# remove the environment_key + environments blocks:
+#
+#   new_cluster:
+#     spark_version: "15.4.x-scala2.12"
+#     node_type_id:  "i3.xlarge"
+#     num_workers:   2
+#     spark_conf:
+#       "spark.databricks.delta.schema.autoMerge.enabled": "true"
+#     init_scripts:
+#       - workspace:
+#           destination: /Workspace/Users/${workspace.current_user.userName}/uw-copilot-template/scripts/install_package.sh

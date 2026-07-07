@@ -1,0 +1,156 @@
+resources:
+  jobs:
+
+    # ─── Job 1: One-time full setup ──────────────────────────────────────────────
+    pipeline-setup:
+      name: uw-copilot-pipeline-setup
+      description: >
+        One-time full setup: creates schema and tables, bulk-ingests historical
+        documents, builds Vector Search index, deploys the RAG chain and App.
+        Run manually on day 1 and after major structural changes.
+      tasks:
+        - task_key: create-schema
+          notebook_task:
+            notebook_path: ${var.bundle_ws_path}/schema/01_create_tables
+          environment_key: default
+
+        - task_key: seed-data
+          depends_on:
+            - task_key: create-schema
+          notebook_task:
+            notebook_path: ${var.bundle_ws_path}/schema/02_seed_data
+          environment_key: default
+
+        - task_key: ingest-batch
+          depends_on:
+            - task_key: seed-data
+          notebook_task:
+            notebook_path: ${var.bundle_ws_path}/rag_pipeline/01_ingest_batch
+          environment_key: default
+
+        - task_key: chunk-and-index
+          depends_on:
+            - task_key: ingest-batch
+          notebook_task:
+            notebook_path: ${var.bundle_ws_path}/rag_pipeline/02_chunk_and_index
+          environment_key: default
+
+        - task_key: deploy-chain
+          depends_on:
+            - task_key: chunk-and-index
+          notebook_task:
+            notebook_path: ${var.bundle_ws_path}/rag_pipeline/09_deploy
+          environment_key: default
+
+        - task_key: baseline-eval
+          depends_on:
+            - task_key: deploy-chain
+          notebook_task:
+            notebook_path: ${var.bundle_ws_path}/rag_pipeline/07_evaluate
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+            # Replace with your GitHub URL once the repo is public,
+            # or use a pre-built wheel uploaded to a UC Volume.
+            # For workspace-local development: notebooks call subprocess pip install.
+            dependencies:
+              - "databricks-sdk>=0.40.0"
+              - "databricks-ai-search>=0.3.0"
+              - "mlflow>=2.13.0"
+              - "pyyaml>=6.0"
+
+    # ─── Job 2: Ongoing S3 intake ─────────────────────────────────────────────
+    intake:
+      name: uw-copilot-intake
+      description: >
+        Runs every 15 minutes. Auto Loader picks up new files from S3,
+        parses with ai_parse_document(), chunks, and appends to Vector Search.
+      schedule:
+        quartz_cron_expression: "0 */15 * * * ?"
+        timezone_id: "America/New_York"
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: run-intake
+          notebook_task:
+            notebook_path: ${var.bundle_ws_path}/rag_pipeline/01b_ingest_stream
+          environment_key: default
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+            dependencies:
+              - "databricks-sdk>=0.40.0"
+              - "databricks-ai-search>=0.3.0"
+              - "mlflow>=2.13.0"
+              - "pyyaml>=6.0"
+
+    # ─── Job 3: Infrastructure start ─────────────────────────────────────────
+    infra-start:
+      name: uw-copilot-infra-start
+      description: >
+        Recreates Vector Search endpoint, syncs index from Delta,
+        and recreates the Model Serving endpoint. Runs at 8 AM weekdays.
+      schedule:
+        quartz_cron_expression: "0 40 7 ? * MON-FRI *"
+        timezone_id: "America/New_York"
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: start-infra
+          notebook_task:
+            notebook_path: ${var.bundle_ws_path}/infra/infra_start
+          environment_key: default
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+            dependencies:
+              - "databricks-sdk>=0.40.0"
+              - "databricks-ai-search>=0.3.0"
+              - "pyyaml>=6.0"
+
+    # ─── Job 4: Infrastructure stop ──────────────────────────────────────────
+    infra-stop:
+      name: uw-copilot-infra-stop
+      description: >
+        Pauses Vector Search endpoint and Model Serving endpoint.
+        Runs at 8 PM weekdays to reduce overnight costs.
+      schedule:
+        quartz_cron_expression: "0 0 20 ? * MON-FRI *"
+        timezone_id: "America/New_York"
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: stop-infra
+          notebook_task:
+            notebook_path: ${var.bundle_ws_path}/infra/infra_stop
+          environment_key: default
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+            dependencies:
+              - "databricks-sdk>=0.40.0"
+              - "pyyaml>=6.0"
+
+    # ─── Job 5: App redeploy ──────────────────────────────────────────────────
+    app-deploy:
+      name: uw-copilot-app-deploy
+      description: >
+        Redeploys the Databricks App. Run manually after changes
+        to app/app.py or app/app.yaml.
+      tasks:
+        - task_key: deploy-app
+          notebook_task:
+            notebook_path: ${var.bundle_ws_path}/rag_pipeline/09_deploy
+            base_parameters:
+              deploy_app_only: "true"
+          environment_key: default
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+            dependencies:
+              - "databricks-sdk>=0.40.0"
+              - "pyyaml>=6.0"

@@ -1,0 +1,55 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  UW CoPilot — Company Configuration Template
+#  Copy this file to company_config.yaml and fill in your values.
+#
+#  This is a blank template. For a fully configured example, see
+#  company_config.yaml (the Atlas Commercial Insurance reference implementation).
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Company Identity ─────────────────────────────────────────────────────────
+company:
+  name:       "Your Company Name"
+  short_name: "yourco"       # lowercase, no spaces — e.g. "acme", "pioneer", "bridge"
+  domain:     "insurance"    # lowercase, no spaces — e.g. "insurance", "casualty", "specialty"
+
+# ─── Databricks Unity Catalog ─────────────────────────────────────────────────
+catalog: "your_catalog"
+
+# ─── Submission Intake ────────────────────────────────────────────────────────
+intake:
+  volume_name: "raw_documents"         # UC Volume name — auto-created under {catalog}.{schema}
+  schedule: "*/15 * * * *"
+
+# ─── AI Models ────────────────────────────────────────────────────────────────
+models:
+  chat:      "databricks-claude-sonnet-4"
+  embedding: "databricks-gte-large-en"
+
+# ─── Document Chunking ────────────────────────────────────────────────────────
+chunking:
+  parent_size: 2500
+  child_size:  600
+  overlap:     100
+
+# ─── Historical Similarity Search ─────────────────────────────────────────────
+similarity:
+  threshold:   0.75
+  max_results: 10
+
+# ─── Document Categories ──────────────────────────────────────────────────────
+# Define one entry per S3 subfolder.
+# The id must match the subfolder name exactly.
+doc_categories:
+  - id: "01_guidelines"
+    label: "Underwriting Guidelines"
+  - id: "02_submissions"
+    label: "Submissions"
+  # Add more categories as needed
+
+# ─── Role-Based Access Control ────────────────────────────────────────────────
+rbac:
+  underwriter:
+    - "all"
+  broker:
+    - "Underwriting Guidelines"
+    # Add more roles and categories as needed

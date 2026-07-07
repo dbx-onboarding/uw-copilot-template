@@ -1,0 +1,33 @@
+bundle:
+  name: uw-copilot-template
+
+# No manual variables — all resource names are derived at runtime
+# inside notebooks by: from uw_copilot.config import Config; cfg = Config()
+# Job names are generic and do not encode the company prefix.
+#
+# bundle_ws_path: absolute workspace path to the bundle root.
+# Forks must update the default value (or override per target) to match
+# their own workspace path before deploying.
+variables:
+  bundle_ws_path:
+    description: >
+      Absolute workspace path to the bundle root directory.
+      Update when forking for a different user or workspace.
+    # ⚠️  UPDATE THIS before deploying: set to the absolute workspace path
+    #    where you cloned or forked this repository.
+    #    Example: /Workspace/Users/you@yourcompany.com/uw-copilot-template
+    default: /Workspace/Users/YOUR_USERNAME/uw-copilot-template
+
+include:
+  - resources/jobs.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+
+  staging:
+    mode: development
+
+  prod:
+    mode: production

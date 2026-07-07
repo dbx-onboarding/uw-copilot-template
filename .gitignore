@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.venv/
+
+# Databricks
+.databricks/
+bundle.lock
+
+# Secrets — NEVER commit credentials
+secrets/
+*.secret
+*_credentials*
+
+# Sample data — PDFs are large; host on S3 instead
+sample_data/atlas_commercial_insurance/*.pdf
+
+# Local overrides
+config/company_config.local.yaml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets and environment files — never commit
+*.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# Company config contains warehouse IDs and environment-specific paths.
+# Forks should commit their own company_config.yaml intentionally,
+# but exclude any local overrides.
+config/company_config.local.yaml
+config/secrets.yaml
+
+# Databricks local state
+.databricks/
