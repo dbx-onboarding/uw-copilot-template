@@ -1,7 +1,12 @@
+# Databricks Apps manifest — UW CoPilot WebApp (FastAPI + React).
+# Deployed from repo root; cd into webapp/ so server.main imports cleanly
+# and ../config resolves to repo-root/config/company_config.yaml.
+# React build must exist at webapp/frontend/dist/ before deploy.
 command:
-  - "streamlit"
-  - "run"
-  - "app/app.py"
-  - "--server.enableCORS=false"
-  - "--server.enableXsrfProtection=false"
-  - "--theme.base=dark"
+  - "sh"
+  - "-c"
+  - "cd webapp && uvicorn server.main:app --host 0.0.0.0 --port ${DATABRICKS_APP_PORT:-8080}"
+
+env:
+  - name: "UWCOPILOT_CONFIG"
+    value: "../config/company_config.yaml"
