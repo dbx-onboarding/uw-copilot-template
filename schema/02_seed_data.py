@@ -54,8 +54,9 @@ spark.sql(f"""INSERT INTO {C}.{S}.insureds VALUES ('INS-1001','Heartland Express
 ('INS-1010','Tri-State Tanker Corp',NULL,'1123456','MC-345678','PA','Allentown',25,22,24,'Intermediate','Fuel/Petroleum','Satisfactory',12.1,15.8,10.4,7.2,18900000.00,2860000,'Omnitracs',100.00,'Preferred','Sarah Mitchell','2015-05-10'),
 ('INS-1011','Midwest Flatbed Solutions','MFS','1234560','MC-456789','IN','Indianapolis',6,40,44,'Regional','Steel/Metals','Satisfactory',30.2,36.8,28.9,18.5,14500000.00,4160000,'Samsara',80.00,'Acceptable','David Chen','2022-03-01'),
 ('INS-1012','Sunbelt Dedicated Services','Sunbelt','2345670','MC-567801','GA','Atlanta',4,95,110,'Dedicated','Retail/Consumer','Satisfactory',20.8,25.3,19.7,13.4,38000000.00,9750000,'Samsara',90.00,'Preferred','James Rodriguez','2020-01-15'),
-('INS-1013','Ironhorse Freight Systems LLC','Ironhorse Freight','3720145','MC-977321','IN','Indianapolis',9,8,8,'Regional','General Freight','Satisfactory',48.0,41.0,33.0,20.0,3400000.00,1120000,'Samsara',80.00,'Acceptable','David Chen','2026-06-25')""")
-print("  insureds: 13")
+('INS-1013','Ironhorse Freight Systems LLC','Ironhorse Freight','3720145','MC-977321','IN','Indianapolis',9,8,8,'Regional','General Freight','Satisfactory',48.0,41.0,33.0,20.0,3400000.00,1120000,'Samsara',80.00,'Acceptable','David Chen','2026-06-25'),
+('INS-1014','Dixie Express Lines','Dixie Express','5140231','MC-514023','TN','Nashville',14,52,58,'Long Haul','General Freight','Satisfactory',35.2,29.8,24.6,16.1,24500000.00,9200000,'Samsara',82.00,'Acceptable','James Rodriguez','2012-05-01')""")
+print("  insureds: 14")
 
 # COMMAND ----------
 
@@ -124,8 +125,13 @@ spark.sql(f"""INSERT INTO {C}.{S}.drivers VALUES ('DRV-2001','INS-1001','Robert'
 ('DRV-2104','INS-1013','Derek','Osborne','IN-CDL-45120091','IN','A','1983-03-08','2020-06-20',13,4,'2026-05-01','Active',false,false,false,1,3,69.7),
 ('DRV-2105','INS-1013','Nia','Coleman','KY-CDL-22120092','KY','A','1988-11-30','2022-01-10',9,1,'2026-05-01','Active',false,false,false,0,1,86.9),
 ('DRV-2106','INS-1013','Patrick','Mensah','MI-CDL-11120093','MI','A','1977-07-15','2019-09-01',18,0,'2026-05-01','Active',false,false,true,0,0,91.3),
-('DRV-2107','INS-1013','Vince','Alvarado','IN-CDL-45120094','IN','A','1993-02-22','2023-04-15',5,2,'2026-05-01','Active',false,false,false,1,2,74.5)""")
-print("  drivers: 37")
+('DRV-2107','INS-1013','Vince','Alvarado','IN-CDL-45120094','IN','A','1993-02-22','2023-04-15',5,2,'2026-05-01','Active',false,false,false,1,2,74.5),
+('DRV-2110','INS-1014','Wayne','Tucker','TN-CDL-88011201','TN','A','1976-08-14','2016-09-01',21,0,'2026-04-01','Active',false,false,false,0,0,94.0),
+('DRV-2111','INS-1014','Carla','Simmons','TN-CDL-88011202','TN','A','1984-03-22','2018-05-15',13,1,'2026-04-01','Active',false,false,false,0,1,89.3),
+('DRV-2112','INS-1014','Roy','Benton','GA-CDL-66011203','GA','A','1972-11-05','2014-02-10',24,0,'2026-04-01','Active',false,true,false,0,0,95.8),
+('DRV-2113','INS-1014','Denise','Fowler','TN-CDL-88011204','TN','A','1990-07-18','2021-08-01',8,2,'2026-04-01','Active',false,false,false,1,2,81.5),
+('DRV-2114','INS-1014','Marvin','Ellison','AL-CDL-77011205','AL','A','1981-01-30','2019-06-20',12,3,'2026-04-01','Active',false,false,false,1,3,76.2)""")
+print("  drivers: 42")
 
 # COMMAND ----------
 
@@ -170,8 +176,11 @@ spark.sql(f"""INSERT INTO {C}.{S}.claims VALUES ('CLM-25-2614672','ACI-AL-25-732
 ('CLM-26-5670123','ACI-AL-25-618934','INS-1006','2026-02-14','2026-02-14','Open','Physical Damage','Deer strike on I-25. Bumper and headlight damage only.',0.00,NULL,'Lisa Chang',false,'None',8500.00,0.00,8500.00,500.00,0.00,false,false,false,NULL),
 ('CLM-23-6789012','ACI-AL-25-690117','INS-1003','2023-03-22','2023-03-22','Closed','Bodily Injury','Tanker rollover on highway. No spill. Third-party vehicle occupant hospitalized with fractures.',75.00,'David Kowalski','Senior Adjuster Tom Bradley',true,'Settled',310000.00,310000.00,0.00,42000.00,0.00,false,true,false,'2024-09-15'),
 ('CLM-25-7201451','ACI-AL-25-720145','INS-1013','2025-04-12','2025-04-13','Closed','Physical Damage','Low-speed rear-end on I-70; bumper and trailer door damage. Clear liability, insured at fault.',0.00,NULL,'Adjuster Nadia Hassan',false,'None',28000.00,28000.00,0.00,1500.00,0.00,false,false,false,'2025-06-20'),
-('CLM-26-7201452','ACI-AL-25-720145','INS-1013','2026-01-30','2026-01-31','Open','Cargo','Load shift damaged palletized goods in transit; salvage of undamaged units pursued.',0.00,NULL,'Cargo Specialist Brett Connolly',false,'None',42000.00,12000.00,30000.00,2500.00,8000.00,false,false,false,NULL)""")
-print("  claims: 15")
+('CLM-26-7201452','ACI-AL-25-720145','INS-1013','2026-01-30','2026-01-31','Open','Cargo','Load shift damaged palletized goods in transit; salvage of undamaged units pursued.',0.00,NULL,'Cargo Specialist Brett Connolly',false,'None',42000.00,12000.00,30000.00,2500.00,8000.00,false,false,false,NULL),
+('CLM-24-5140231','ACI-AL-24-514020','INS-1014','2024-02-10','2024-02-11','Closed','Bodily Injury','Rear-end collision on I-40 in stop-and-go traffic; third-party soft-tissue injury, settled without suit.',70.00,'Gregory Palmer','Adjuster Nadia Hassan',false,'Settled',72000.00,72000.00,0.00,6000.00,0.00,false,false,false,'2024-08-15'),
+('CLM-25-5140455','ACI-AL-25-514021','INS-1014','2025-03-18','2025-03-19','Closed','Physical Damage','Weather-related jackknife on I-24 grade; tractor and trailer damage, no third party involved.',100.00,NULL,'Lisa Chang',false,'None',64000.00,64000.00,0.00,3500.00,0.00,false,false,false,'2025-07-01'),
+('CLM-25-5140782','ACI-AL-25-514021','INS-1014','2025-11-05','2025-11-07','Open','Bodily Injury','Lane-change sideswipe near Nashville; claimant alleging lumbar injury. Pre-suit demand received.',60.00,'Alicia Mercer','Senior Adjuster Tom Bradley',true,'Pre-Suit',98000.00,40000.00,58000.00,8000.00,0.00,false,false,false,NULL)""")
+print("  claims: 18")
 
 # COMMAND ----------
 
@@ -182,7 +191,7 @@ print("  claims: 15")
 # DBTITLE 1,Cell 16
 spark.sql(f"""INSERT INTO {C}.{S}.submissions VALUES ('SUB-26-11099',NULL,'Rockford Grain Transport LLC','Heartland Specialty Insurance','Tom Berkowitz','2026-06-15','2026-08-01','In Review',28,32,'Regional','Dry Bulk/Grain','1,000,000 CSL',145000.00,NULL,38.20,'David Chen',false,NULL,NULL),
 ('SUB-26-11102',NULL,'Coastal Petroleum Haulers Inc','Energy Risk Brokers','Rachel Kim','2026-06-20','2026-09-01','Received',15,18,'Intermediate','Petroleum/Chemicals','2,000,000 CSL',280000.00,NULL,25.80,NULL,true,NULL,NULL),
-('SUB-26-11087',NULL,'Dixie Express Lines','Southeast Transport Brokerage','Bill Masters','2026-06-01','2026-08-15','Quoted',52,58,'Long Haul','General Freight','1,000,000 CSL',310000.00,345000.00,52.10,'James Rodriguez',false,NULL,8),
+('SUB-26-11087','INS-1014','Dixie Express Lines','Southeast Transport Brokerage','Bill Masters','2026-06-01','2026-08-15','Quoted',52,58,'Long Haul','General Freight','1,000,000 CSL',310000.00,345000.00,52.10,'James Rodriguez',false,NULL,8),
 ('SUB-26-11078',NULL,'Metro Moving and Storage','Atlantic Specialty Brokers','Linda Garcia','2026-05-20','2026-07-01','Declined',8,10,'Local','Household Goods','1,000,000 CSL',42000.00,NULL,95.30,'Sarah Mitchell',false,'Loss ratio exceeds 90% for 3 consecutive years. Fleet has 2 excluded drivers out of 10 total.',NULL),
 ('SUB-26-11065','INS-1002','Pacific Coast Carriers Inc','Golden State Insurance Partners','Steve Yamamoto','2026-05-01','2026-07-01','Quoted',42,48,'Long Haul','Refrigerated','1,000,000 CSL',298000.00,325000.00,48.90,'James Rodriguez',true,NULL,12),
 ('SUB-26-11045',NULL,'Appalachian Coal Transport','Mountain State Risk','Jim Hartley','2026-04-15','2026-06-01','Declined',30,35,'Regional','Coal/Mining','1,000,000 CSL',195000.00,NULL,78.50,'David Chen',true,'CSA Unsafe Driving above 75th percentile. Two DOT OOS inspections in past 6 months. Driver turnover >80%.',NULL),
@@ -215,8 +224,11 @@ spark.sql(f"""INSERT INTO {C}.{S}.loss_runs VALUES ('LR-1001-2325','INS-1001','A
 ('LR-1007-2526','INS-1007','ACI-AL-25-778321','2025-2026','2026-06-15',2,700000.00,95000.00,605000.00,232500.00,301.08,2,0.04,350000.00),
 ('LR-1013-2324','INS-1013','ACI-AL-23-720140','2023-2024','2024-06-15',2,96000.00,96000.00,0.00,300000.00,32.00,0,0.05,48000.00),
 ('LR-1013-2425','INS-1013','ACI-AL-24-720142','2024-2025','2025-06-15',4,262000.00,214000.00,48000.00,290000.00,90.34,1,0.09,65500.00),
-('LR-1013-2526','INS-1013','ACI-AL-25-720145','2025-2026','2026-06-15',3,205000.00,150000.00,55000.00,300000.00,68.33,0,0.07,68333.33)""")
-print("  loss_runs: 18")
+('LR-1013-2526','INS-1013','ACI-AL-25-720145','2025-2026','2026-06-15',3,205000.00,150000.00,55000.00,300000.00,68.33,0,0.07,68333.33),
+('LR-1014-2324','INS-1014','ACI-AL-24-514020','2023-2024','2024-04-01',3,158400.00,158400.00,0.00,330000.00,48.00,0,0.06,52800.00),
+('LR-1014-2425','INS-1014','ACI-AL-25-514021','2024-2025','2025-04-01',4,196000.00,168000.00,28000.00,345000.00,56.81,0,0.08,49000.00),
+('LR-1014-2526','INS-1014','ACI-AL-25-514021','2025-2026','2026-06-15',3,158000.00,96000.00,62000.00,310000.00,50.97,0,0.06,52666.67)""")
+print("  loss_runs: 21")
 
 # COMMAND ----------
 

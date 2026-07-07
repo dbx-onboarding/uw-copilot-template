@@ -106,6 +106,11 @@ export default function Detail({ summary, sessionId, onBack, toast }) {
               <div className="meta">{detail.operation || detail.lob} · {detail.id} · Received {detail.received}</div>
             </div>
             <div style={{ display: "flex", gap: 6 }}>
+              {detail.account_type && (
+                <span className={`badge ${detail.account_type === "Renewal" ? "renewal" : "newbiz"}`}>
+                  {detail.account_type === "Renewal" ? "RENEWAL" : "NEW BUSINESS"}
+                </span>
+              )}
               <RiskBadge risk={detail.risk} />
               {detail.referral && <span className="badge ref">REFER</span>}
             </div>
@@ -121,9 +126,9 @@ export default function Detail({ summary, sessionId, onBack, toast }) {
             <Overview detail={detail} a={a} verdict={verdict} conf={conf}
                       decided={decided} decide={openModal} />
           )}
-          {tab === "Claims" && <ClaimsTab id={detail.id} />}
-          {tab === "Loss Runs" && <LossRunsTab id={detail.id} />}
-          {tab === "Drivers" && <DriversTab id={detail.id} scheduled={detail.driver_count} />}
+          {tab === "Claims" && <ClaimsTab id={detail.id} newBiz={detail.account_type === "New Business"} />}
+          {tab === "Loss Runs" && <LossRunsTab id={detail.id} newBiz={detail.account_type === "New Business"} />}
+          {tab === "Drivers" && <DriversTab id={detail.id} scheduled={detail.driver_count} newBiz={detail.account_type === "New Business"} />}
           {tab === "Documents" && <DocumentsTab id={detail.id} />}
           {tab === "Notes" && (
             <textarea
@@ -175,6 +180,7 @@ export default function Detail({ summary, sessionId, onBack, toast }) {
 function Overview({ detail, a, verdict, conf, decided, decide }) {
   const snap = [
     ["Insured", detail.name],
+    ["Account", detail.account_type],
     ["Status", detail.status],
     ["Operation", detail.operation || "Commercial Auto"],
     ["Commodity", detail.commodity],
@@ -259,9 +265,11 @@ function DataTable({ cols, rows, empty }) {
   );
 }
 
-function ClaimsTab({ id }) {
+const NEWBIZ_NOTE = "New business submission — no prior Atlas policy history. Underwrite from the prior-carrier loss runs, MVRs, and application under Documents.";
+
+function ClaimsTab({ id, newBiz }) {
   const d = useTabData(api.claims, id);
-  return <DataTable rows={d?.claims} empty="No claims on record" cols={[
+  return <DataTable rows={d?.claims} empty={newBiz ? NEWBIZ_NOTE : "No claims on record"} cols={[
     { k: "claim_id", label: "Claim" },
     { k: "date", label: "Loss Date" },
     { k: "type", label: "Type" },
@@ -272,9 +280,9 @@ function ClaimsTab({ id }) {
   ]} />;
 }
 
-function LossRunsTab({ id }) {
+function LossRunsTab({ id, newBiz }) {
   const d = useTabData(api.lossRuns, id);
-  return <DataTable rows={d?.loss_runs} empty="No loss runs on record" cols={[
+  return <DataTable rows={d?.loss_runs} empty={newBiz ? NEWBIZ_NOTE : "No loss runs on record"} cols={[
     { k: "period", label: "Period" },
     { k: "claims", label: "Claims", num: true },
     { k: "large_losses", label: "Large Losses", num: true },
@@ -284,7 +292,7 @@ function LossRunsTab({ id }) {
   ]} />;
 }
 
-function DriversTab({ id, scheduled }) {
+function DriversTab({ id, scheduled, newBiz }) {
   const d = useTabData(api.drivers, id);
   const onFile = d?.drivers?.length;
   return (
@@ -294,7 +302,9 @@ function DriversTab({ id, scheduled }) {
         {(onFile ?? 0)} driver record{onFile === 1 ? "" : "s"} on file · {scheduled} scheduled per application
       </div>
     )}
-    <DataTable rows={d?.drivers} empty="No driver records linked to this submission (schedule pending upload / insured not yet linked)" cols={[
+    <DataTable rows={d?.drivers} empty={newBiz
+      ? "New business submission — driver MVRs not yet loaded into Atlas. Review the application driver schedule and ordered MVRs under Documents."
+      : "No driver records linked to this submission (schedule pending upload)"} cols={[
     { k: "name", label: "Driver" },
     { k: "cdl_class", label: "CDL" },
     { k: "experience", label: "Yrs Exp", num: true },

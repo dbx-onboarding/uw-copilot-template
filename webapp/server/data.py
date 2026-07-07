@@ -195,6 +195,13 @@ def submission_detail(sub_id: str) -> Optional[Dict[str, Any]]:
     base = sel or _demo_submission_by_id(sub_id) or {}
     assessment = _build_assessment(row, base)
     detail = dict(base)
+
+    # New business vs. renewal: a renewal has an expiring Atlas policy to renew.
+    exp = (row or {}).get("expiring_premium")
+    has_expiring = exp not in (None, 0, "0", "")
+    detail["account_type"] = "Renewal" if has_expiring else "New Business"
+    detail["has_history"] = bool((row or {}).get("num_claims"))
+
     if row:
         detail.update({
             "annual_revenue": _money(row.get("annual_revenue")),

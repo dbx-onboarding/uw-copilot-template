@@ -104,20 +104,29 @@ export function ClaimsView() {
   const d = useLoad(api.allClaims);
   const rows = d?.claims;
   const [sel, setSel] = useState(null);
+  const [filter, setFilter] = useState("all");
   const open = rows ? rows.filter((r) => r.status === "Open").length : 0;
   const lit = rows ? rows.filter((r) => r.litigation && r.litigation !== "None").length : 0;
+  const shown = !rows
+    ? rows
+    : filter === "open"
+    ? rows.filter((r) => r.status === "Open")
+    : filter === "lit"
+    ? rows.filter((r) => r.litigation && r.litigation !== "None")
+    : rows;
+  const toggle = (f) => setFilter((cur) => (cur === f ? "all" : f));
   return (
     <>
       <PageHead title="Claims" sub="Portfolio-wide claim inventory across all insureds. Click a claim for detail." />
       {rows && rows.length > 0 && (
         <div className="mini-stats">
-          <span className="mini-stat">{rows.length} claims</span>
-          <span className="mini-stat warn">{open} open</span>
-          <span className="mini-stat danger">{lit} in litigation</span>
+          <span className={`mini-stat clickable ${filter === "all" ? "active" : ""}`} onClick={() => setFilter("all")}>{rows.length} claims</span>
+          <span className={`mini-stat warn clickable ${filter === "open" ? "active" : ""}`} onClick={() => toggle("open")}>{open} open</span>
+          <span className={`mini-stat danger clickable ${filter === "lit" ? "active" : ""}`} onClick={() => toggle("lit")}>{lit} in litigation</span>
         </div>
       )}
       <div className="panel card-pad">
-        <Table rows={rows} onRow={setSel} empty="No claims available" cols={[
+        <Table rows={shown} onRow={setSel} empty="No claims available" cols={[
           { k: "claim_id", label: "Claim" },
           { k: "company", label: "Insured" },
           { k: "date", label: "Loss Date" },
