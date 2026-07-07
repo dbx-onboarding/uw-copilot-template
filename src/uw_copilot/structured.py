@@ -84,6 +84,25 @@ Columns:
 - violations_3yr INT
 - telematics_score DECIMAL(5,1) (0-100, higher is better)
 
+### TABLE: {fq}.vehicles
+Fleet vehicle inventory (power units and trailers).
+Columns:
+- vehicle_id STRING (PK, format: VEH-NNNN)
+- insured_id STRING (FK to insureds)
+- policy_id STRING (FK to policies)
+- year INT
+- make STRING
+- model STRING
+- vehicle_type STRING
+- gvw INT (gross vehicle weight)
+- stated_value DECIMAL(10,2)
+- radius_class STRING
+- garage_state STRING (2-letter state code)
+- has_dashcam BOOLEAN
+- has_eld BOOLEAN
+- inspection_result STRING (Pass, Conditional, Fail)
+- annual_mileage INT
+
 ### TABLE: {fq}.claims
 Open and closed claims with reserves and litigation.
 Columns:
@@ -155,6 +174,8 @@ Columns:
 ### COMMON JOINS:
 - insureds.insured_id = policies.insured_id
 - insureds.insured_id = drivers.insured_id
+- insureds.insured_id = vehicles.insured_id
+- policies.policy_id = vehicles.policy_id
 - insureds.insured_id = claims.insured_id
 - policies.policy_id = claims.policy_id
 - insureds.insured_id = loss_runs.insured_id

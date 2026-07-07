@@ -100,17 +100,23 @@ class FeedbackManager:
         # Map string rating to int (table schema: rating INT, 1=up, -1=down)
         rating_int = 1 if rating == "thumbs_up" else -1
 
+        # session_id is NOT NULL in the table — coerce a missing one rather than
+        # emit a NULL that silently fails the insert.
+        sid = session_id or "no-session"
         sql = f"""
             INSERT INTO {self.table}
-            (feedback_id, session_id, user_id, question, answer, rating, comment, created_at)
+            (feedback_id, session_id, user_id, question, answer, rating, comment,
+             intent_classification, promoted_to_eval, created_at)
             VALUES (
                 '{feedback_id}',
-                {val(session_id)},
+                '{esc(sid)}',
                 '{esc(user_id)}',
                 '{esc(query)}',
                 '{esc(response)}',
                 {rating_int},
                 {val(comment)},
+                {val(intent_classification)},
+                false,
                 TIMESTAMP '{now}'
             )
         """
@@ -124,9 +130,9 @@ class FeedbackManager:
         sql = f"""
             SELECT
                 COUNT(*) as total_feedback,
-                SUM(CASE WHEN rating = 'thumbs_up' THEN 1 ELSE 0 END) as thumbs_up,
-                SUM(CASE WHEN rating = 'thumbs_down' THEN 1 ELSE 0 END) as thumbs_down,
-                ROUND(SUM(CASE WHEN rating = 'thumbs_up' THEN 1 ELSE 0 END) * 100.0
+                SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as thumbs_up,
+                SUM(CASE WHEN rating = -1 THEN 1 ELSE 0 END) as thumbs_down,
+                ROUND(SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) * 100.0
                       / NULLIF(COUNT(*), 0), 1) as satisfaction_pct,
                 SUM(CASE WHEN promoted_to_eval THEN 1 ELSE 0 END) as promoted_count
             FROM {self.table}
@@ -144,13 +150,13 @@ class FeedbackManager:
     def get_negative_feedback(self, limit: int = 20) -> List[Dict]:
         """Get recent negative feedback for review."""
         sql = f"""
-            SELECT feedback_id, timestamp, user_id, query,
-                   LEFT(response, 200) as response_preview,
+            SELECT feedback_id, created_at AS timestamp, user_id, question AS query,
+                   LEFT(answer, 200) as response_preview,
                    comment, intent_classification
             FROM {self.table}
-            WHERE rating = 'thumbs_down'
-              AND promoted_to_eval = false
-            ORDER BY timestamp DESC
+            WHERE rating = -1
+              AND (promoted_to_eval IS NULL OR promoted_to_eval = false)
+            ORDER BY created_at DESC
             LIMIT {limit}
         """
         result = self._execute(sql)
@@ -214,13 +220,13 @@ class FeedbackManager:
         sql = f"""
             SELECT
                 intent_classification,
-                DATE(timestamp) as feedback_date,
+                DATE(created_at) as feedback_date,
                 COUNT(*) as total,
-                SUM(CASE WHEN rating = 'thumbs_up' THEN 1 ELSE 0 END) as positive,
-                ROUND(SUM(CASE WHEN rating = 'thumbs_up' THEN 1 ELSE 0 END) * 100.0
+                SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as positive,
+                ROUND(SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) * 100.0
                       / NULLIF(COUNT(*), 0), 1) as satisfaction_pct
             FROM {self.table}
-            GROUP BY intent_classification, DATE(timestamp)
+            GROUP BY intent_classification, DATE(created_at)
             ORDER BY feedback_date DESC, intent_classification
         """
         result = self._execute(sql)

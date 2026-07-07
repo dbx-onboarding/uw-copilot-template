@@ -47,6 +47,7 @@ class UWCopilotAgent(ChatModel):
         self.structured:  Optional[StructuredDataTool] = None
         self.guardrails:  Optional[GuardrailPipeline] = None
         self.system_prompt: str = ""
+        self._last_docs:  list = []  # populated per-request; used to build source citations
 
     def load_context(self, context):
         # Only load static artifacts here — WorkspaceClient is NOT initialised
@@ -79,17 +80,24 @@ class UWCopilotAgent(ChatModel):
 
         intent = self.retriever.detect_intent(question)
 
-        # Route SQL-intent queries to structured data tool
-        if intent == QueryIntent.SQL:
+        # Route SQL-intent queries to the structured data tool — but enforce RBAC.
+        # Roles without operational-data access fall back to document retrieval
+        # rather than querying the operational tables directly.
+        if intent == QueryIntent.SQL and _can_query_structured(user_role):
+            self._last_docs = []
             sql_context = self.structured.query(question)
-            answer, sources = self._generate(question, sql_context, messages)
+            answer, _ = self._generate(question, sql_context, messages)
             result = self.guardrails.apply(answer)
-            return _format_response(result.answer, sources)
+            return _format_response(result.answer, [])
 
-        # Default: document retrieval path
-        docs   = self.retriever.search(question, user_role=user_role, intent=intent)
+        # Default: document retrieval path.
+        # SQL-intent from a role that can't use structured data is answered from docs.
+        doc_intent = intent if intent != QueryIntent.SQL else QueryIntent.HYBRID
+        docs   = self.retriever.search(question, user_role=user_role, intent=doc_intent)
+        self._last_docs = docs
         ctx    = self.retriever.build_context(docs)
         answer, sources = self._generate(question, ctx, messages)
+        answer = _append_citations(answer, docs)  # surface sources inline in the answer
         result = self.guardrails.apply(answer)
         return _format_response(result.answer, sources)
 
@@ -145,7 +153,7 @@ def log_and_register_agent(cfg: Config, alias: str = "champion") -> str:
 
     # Declare table resources so the serving endpoint gets SELECT on operational tables
     _operational_tables = [
-        "insureds", "policies", "drivers", "claims",
+        "insureds", "policies", "drivers", "vehicles", "claims",
         "submissions", "loss_runs", "underwriting_referrals",
     ]
     for tbl in _operational_tables:
@@ -180,6 +188,38 @@ def log_and_register_agent(cfg: Config, alias: str = "champion") -> str:
     uri = f"models:/{cfg.uc_model}@{alias}"
     print(f"Registered: {uri}")
     return uri
+
+
+# ── RBAC for the structured-data (NL-to-SQL) path ───────────────────────────────
+# Roles that must NOT run free-form queries against operational tables. External
+# parties (brokers) get document-grounded answers instead. Override by editing
+# this set or adapting to your rbac policy.
+SQL_DENIED_ROLES = {"broker"}
+
+
+def _can_query_structured(user_role: str) -> bool:
+    return (user_role or "").lower() not in SQL_DENIED_ROLES
+
+
+def _append_citations(answer: str, docs: list) -> str:
+    """Append a deduplicated Sources list so citations reach the caller/UI."""
+    if not answer or answer.startswith("Error generating response"):
+        return answer
+    seen, sources = set(), []
+    for d in docs or []:
+        path = getattr(d, "source_path", "") or ""
+        if not path or getattr(d, "chunk_id", "") == "error":
+            continue
+        name = path.rstrip("/").split("/")[-1]
+        cat = getattr(d, "category", "") or ""
+        label = f"{name} ({cat})" if cat else name
+        if label not in seen:
+            seen.add(label)
+            sources.append(label)
+    if not sources:
+        return answer
+    lines = "\n".join(f"- {s}" for s in sources[:5])
+    return f"{answer}\n\n**Sources:**\n{lines}"
 
 
 # ── Utilities ─────────────────────────────────────────────────────────────────

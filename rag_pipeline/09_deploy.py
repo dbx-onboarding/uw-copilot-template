@@ -412,7 +412,7 @@ print(f"✅ Granted CAN_QUERY to SP '{app_info.service_principal_name}' ({app_sp
 # Grant on each table explicitly — schema-level SELECT doesn't propagate
 # to the model serving system identity in all cases.
 _tables = [
-    "insureds", "policies", "drivers", "claims",
+    "insureds", "policies", "drivers", "vehicles", "claims",
     "submissions", "loss_runs", "underwriting_referrals",
 ]
 

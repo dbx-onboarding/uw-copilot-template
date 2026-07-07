@@ -1,0 +1,19 @@
+# Databricks Apps manifest for the UW CoPilot web app (FastAPI + React).
+#
+# Deploy this folder as a Databricks App. For LIVE data, deploy from the repo
+# root so that ../src, ../config and ../prompts are included alongside webapp/;
+# the backend locates them relative to webapp/. With no warehouse configured the
+# app still runs on demo data.
+#
+# The React frontend must be built before deploy:
+#   npm --prefix frontend install && npm --prefix frontend run build
+#
+# Databricks injects DATABRICKS_APP_PORT; we bind to it (default 8080 locally).
+command:
+  - "sh"
+  - "-c"
+  - "uvicorn server.main:app --host 0.0.0.0 --port ${DATABRICKS_APP_PORT:-8080}"
+
+env:
+  - name: "UWCOPILOT_CONFIG"
+    value: "../config/company_config.yaml"

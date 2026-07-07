@@ -1,0 +1,10 @@
+# Databricks Apps manifest — Streamlit v2 workbench.
+# Deploy from the repo root so webapp/server/data.py (shared backend) and
+# ../src, ../config are available. Requires Streamlit >= 1.37 (st.feedback,
+# dataframe row selection).
+command:
+  - "streamlit"
+  - "run"
+  - "app_v2/app.py"
+  - "--server.enableCORS=false"
+  - "--server.enableXsrfProtection=false"

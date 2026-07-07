@@ -326,14 +326,17 @@ print(f"  conversation_sessions OK")
 
 spark.sql(f"""
 CREATE TABLE IF NOT EXISTS {C}.{S}.copilot_feedback (
-    feedback_id STRING      NOT NULL,
-    session_id  STRING      NOT NULL,
-    user_id     STRING,
-    question    STRING      NOT NULL,
-    answer      STRING      NOT NULL,
-    rating      INT         COMMENT '1 = thumbs up, -1 = thumbs down',
-    comment     STRING,
-    created_at  TIMESTAMP,
+    feedback_id           STRING    NOT NULL,
+    session_id            STRING    NOT NULL,
+    user_id               STRING,
+    question              STRING    NOT NULL,
+    answer                STRING    NOT NULL,
+    rating                INT       COMMENT '1 = thumbs up, -1 = thumbs down',
+    comment               STRING,
+    intent_classification STRING    COMMENT 'hybrid, keyword, or sql',
+    promoted_to_eval      BOOLEAN   COMMENT 'TRUE once promoted into the eval dataset',
+    promoted_at           TIMESTAMP,
+    created_at            TIMESTAMP,
     CONSTRAINT pk_copilot_feedback PRIMARY KEY (feedback_id)
 )
 COMMENT 'User feedback on CoPilot responses.'

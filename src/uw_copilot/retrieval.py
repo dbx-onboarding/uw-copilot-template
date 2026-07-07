@@ -114,7 +114,10 @@ class HybridRetriever:
             return []  # Caller should route to structured data path
 
         filters = self.get_filter(user_role)
-        query_type = "HYBRID" if intent == QueryIntent.HYBRID else "KEYWORD"
+        # Databricks Vector Search supports query_type "ANN" and "HYBRID" — there is
+        # no "KEYWORD" type. HYBRID combines vector + lexical matching, which also
+        # handles exact reference-ID lookups well, so use it for both intents.
+        query_type = "HYBRID"
 
         # columns must be explicit — score is appended automatically as the
         # final element in each data_array row (i.e. row[5] below).
