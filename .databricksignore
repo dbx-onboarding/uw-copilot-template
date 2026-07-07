@@ -1,0 +1,14 @@
+# Exclude node_modules from Databricks Apps snapshots
+webapp/frontend/node_modules/
+node_modules/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+
+# Local dev
+.env
+.env.*
