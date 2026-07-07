@@ -230,7 +230,8 @@ def claims_for(sub_id: str) -> List[Dict[str, Any]]:
                 "litigation": r.get("litigation_status"),
                 "description": r.get("loss_description"),
             } for r in rows]
-    return _demo_claims()
+    # In live mode, never show unrelated demo rows for an unlinked submission.
+    return [] if warehouse_ready() else _demo_claims()
 
 
 def loss_runs_for(sub_id: str) -> List[Dict[str, Any]]:
@@ -253,7 +254,7 @@ def loss_runs_for(sub_id: str) -> List[Dict[str, Any]]:
                 "large_losses": r.get("large_losses"),
                 "frequency": r.get("frequency"),
             } for r in rows]
-    return _demo_loss_runs()
+    return [] if warehouse_ready() else _demo_loss_runs()
 
 
 def drivers_for(sub_id: str) -> List[Dict[str, Any]]:
@@ -280,7 +281,7 @@ def drivers_for(sub_id: str) -> List[Dict[str, Any]]:
                 "hazmat": bool(r.get("hazmat_endorsement")),
                 "telematics": r.get("telematics_score"),
             } for r in rows]
-    return _demo_drivers()
+    return [] if warehouse_ready() else _demo_drivers()
 
 
 def documents_for(sub_id: str) -> List[Dict[str, Any]]:
@@ -299,7 +300,7 @@ def documents_for(sub_id: str) -> List[Dict[str, Any]]:
             "status": "Indexed",
             "date": str(r.get("parsed_at") or "")[:10],
         } for r in rows]
-    return _demo_documents()
+    return [] if warehouse_ready() else _demo_documents()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

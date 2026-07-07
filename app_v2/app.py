@@ -15,12 +15,25 @@ Shares ONE backend with the React app: webapp/server/data.py.
 Run: streamlit run app.py
 """
 
+import base64
 import os
 import sys
 import uuid
 
 import pandas as pd
 import streamlit as st
+
+
+# ── Logo (bundled next to this file; falls back to a shield glyph) ─────────────
+@st.cache_data(show_spinner=False)
+def _logo_b64():
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo.png")
+    if os.path.exists(p):
+        try:
+            return base64.b64encode(open(p, "rb").read()).decode()
+        except Exception:
+            return None
+    return None
 
 # ── Reuse the shared data layer (same backend as the React app) ────────────────
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -64,8 +77,10 @@ def get_identity():
     except Exception:
         h = {}
     email = h.get("X-Forwarded-Email") or h.get("X-Forwarded-Preferred-Username") or ""
-    name = (h.get("X-Forwarded-Preferred-Username") or email.split("@")[0] or "Underwriter")
-    name = name.replace(".", " ").replace("_", " ").title()
+    # Display name from the local-part of the email only (never title-case the domain).
+    local = (email.split("@")[0] if "@" in email else email) or \
+        h.get("X-Forwarded-Preferred-Username") or "underwriter"
+    name = local.replace(".", " ").replace("_", " ").title()
     cfg = data.get_config()
     policy = getattr(cfg, "rbac_policy", {}) if cfg else {}
     role = "underwriter"
@@ -94,11 +109,42 @@ def badge(risk):
 # ═══════════════════════════════════════════════════════════════════════════════
 subs = data.submission_queue()
 live = data.warehouse_ready()
+_company = getattr(data.get_config(), "company_name", "Atlas Commercial Insurance") if data.get_config() else "Atlas Commercial Insurance"
+_initials = "".join(w[0] for w in ident["name"].split()[:2]).upper() or "UW"
+
+# ── Simulated Databricks Apps shell (so the screens read as a Databricks App) ──
+st.markdown(f"""
+<div style="display:flex;justify-content:space-between;align-items:center;background:#11151d;
+     border:1px solid #232a36;border-radius:8px;padding:6px 12px;font-size:12px;margin-bottom:6px;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span style="display:inline-flex;align-items:center;gap:6px;font-weight:800;color:#ff3621;">
+      <span style="width:12px;height:12px;background:#ff3621;border-radius:2px;display:inline-block;"></span>Databricks</span>
+    <span style="color:#6b7688;">Workspace</span><span style="color:#3a4250;">/</span>
+    <span style="color:#6b7688;">Apps</span><span style="color:#3a4250;">/</span>
+    <span style="color:#e6ebf2;font-weight:600;">atlas-insurance-uw-copilot</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;color:#6b7688;">
+    <span class="badge {'b-low' if live else 'b-med'}">● {'Running' if live else 'Demo'}</span>
+    <span>Serverless · us-east-1</span>
+    <span style="background:#2b3446;color:#cdd6e4;border-radius:50%;width:22px;height:22px;
+          display:inline-flex;align-items:center;justify-content:center;font-weight:700;">{_initials}</span>
+  </div>
+</div>
+<div style="text-align:center;font-size:10px;color:#4c5566;margin-bottom:6px;">Simulated Databricks Apps shell — for demonstration</div>
+""", unsafe_allow_html=True)
+
+# ── App header: logo + title, live badge, identity ────────────────────────────
+_logo = _logo_b64()
+_logo_html = (f'<img src="data:image/png;base64,{_logo}" style="height:34px;vertical-align:middle;">'
+              if _logo else '<span style="font-size:26px;">🛡</span>')
 
 h1, h2, h3 = st.columns([5, 2, 2])
 with h1:
-    st.markdown("### 🛡 UW CoPilot")
-    st.caption(getattr(data.get_config(), "company_name", "Atlas Commercial Insurance") if data.get_config() else "Atlas Commercial Insurance")
+    st.markdown(
+        f'<div style="display:flex;align-items:center;gap:12px;">{_logo_html}'
+        f'<div><div style="font-size:22px;font-weight:800;line-height:1.05;">UW CoPilot</div>'
+        f'<div style="color:#8a94a6;font-size:12px;">{_company}</div></div></div>',
+        unsafe_allow_html=True)
 with h2:
     st.markdown(
         f'<div style="text-align:right;margin-top:14px;">'
@@ -106,22 +152,26 @@ with h2:
         unsafe_allow_html=True)
 with h3:
     st.markdown(
-        f'<div style="text-align:right;margin-top:8px;"><b>{ident["name"]}</b><br>'
-        f'<span style="color:#8a94a6;font-size:12px;">{ident["role"].title()}</span></div>',
+        f'<div style="text-align:right;margin-top:2px;line-height:1.35;">'
+        f'<b>{ident["name"]}</b><br>'
+        f'<span style="color:#8a94a6;font-size:11px;">{ident["email"] or "—"}</span><br>'
+        f'<span style="color:#f97316;font-size:11px;font-weight:700;">{ident["role"].title()}</span></div>',
         unsafe_allow_html=True)
 
 st.divider()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# KPI row (native st.metric)
+# KPI row (native st.metric). Counts derive from the live queue; Portfolio Score
+# is a rough proxy and is tagged as such.
 # ═══════════════════════════════════════════════════════════════════════════════
 n = len(subs)
 k = st.columns(5)
-k[0].metric("Active Queue", n)
-k[1].metric("New Submissions", sum(1 for s in subs if s.get("status") == "New"))
-k[2].metric("High Risk Alerts", sum(1 for s in subs if s.get("risk") == "High"))
-k[3].metric("Pending Referral", sum(1 for s in subs if s.get("referral")))
+k[0].metric("Active Queue", n);                                             k[0].caption("live · from queue")
+k[1].metric("New Submissions", sum(1 for s in subs if s.get("status") == "New")); k[1].caption("live · from queue")
+k[2].metric("High Risk Alerts", sum(1 for s in subs if s.get("risk") == "High")); k[2].caption("live · from queue")
+k[3].metric("Pending Referral", sum(1 for s in subs if s.get("referral")));  k[3].caption("live · from queue")
 k[4].metric("Portfolio Score", int(sum(s.get("score") or 0 for s in subs) / n) if n else 0)
+k[4].caption("⚠ static value for now")
 
 st.write("")
 
@@ -129,6 +179,23 @@ st.write("")
 # ═══════════════════════════════════════════════════════════════════════════════
 # QUEUE (native dataframe with row selection — no invisible-button hack)
 # ═══════════════════════════════════════════════════════════════════════════════
+_QW = [2.7, 1.5, 1.2, 0.8, 1.7, 0.9, 0.7, 1.0, 1.2, 0.6]  # column widths
+
+
+def _open(row):
+    st.session_state.selected = row
+    st.session_state.messages = []
+    st.rerun()
+
+
+def _score_bar(score, risk):
+    color = {"High": "#f0503f", "Medium": "#f5a623", "Low": "#22c98a"}.get(risk, "#6a8bff")
+    return (f'<div style="display:flex;align-items:center;gap:6px;">'
+            f'<div style="flex:1;background:#232a36;border-radius:4px;height:7px;">'
+            f'<div style="background:{color};height:7px;border-radius:4px;width:{max(0,min(score,100))}%;"></div></div>'
+            f'<span style="font-size:11px;color:#c9d2df;">{score}</span></div>')
+
+
 def show_queue():
     st.subheader("Submission Queue")
     q = st.text_input("Search", placeholder="Search company, broker, underwriter...",
@@ -139,27 +206,41 @@ def show_queue():
         rows = [s for s in subs if any(ql in str(s.get(k, "")).lower()
                 for k in ("name", "id", "broker", "underwriter", "operation"))]
 
-    df = pd.DataFrame([{
-        "Company": s["name"], "ID": s["id"], "Operation": s.get("operation") or s.get("lob"),
-        "Risk": s["risk"], "AI Score": s.get("score") or 0,
-        "Loss Ratio": (s.get("loss_ratio") or 0), "Fleet": s.get("fleet_size"),
-        "Premium": s.get("premium"), "Status": s.get("status"), "Referral": s.get("referral"),
-    } for s in rows])
+    st.caption("Tip: click a **company name** to open its workbench.")
 
-    event = st.dataframe(
-        df, use_container_width=True, hide_index=True,
-        on_select="rerun", selection_mode="single-row",
-        column_config={
-            "AI Score": st.column_config.ProgressColumn("AI Score", min_value=0, max_value=100, format="%d"),
-            "Loss Ratio": st.column_config.NumberColumn("Loss Ratio", format="%.0f%%"),
-            "Referral": st.column_config.CheckboxColumn("Ref"),
-        },
-    )
-    sel = event.selection.rows if hasattr(event, "selection") else []
-    if sel:
-        st.session_state.selected = rows[sel[0]]
-        st.session_state.messages = []
-        st.rerun()
+    # Header
+    hdr = st.columns(_QW)
+    for c, label in zip(hdr, ["Company", "ID", "Operation", "Risk", "AI Score",
+                              "Loss Ratio", "Fleet", "Premium", "Status", "Ref"]):
+        c.markdown(f'<span style="color:#8a94a6;font-size:11px;font-weight:700;'
+                   f'text-transform:uppercase;letter-spacing:.4px;">{label}</span>',
+                   unsafe_allow_html=True)
+
+    if not rows:
+        st.info("No submissions match your search.")
+        return
+
+    for s in rows:
+        col = st.columns(_QW)
+        # Company name is the clickable affordance (opens the detail workbench)
+        if col[0].button(s["name"], key=f"open_{s['id']}", use_container_width=True):
+            _open(s)
+        lr = (s.get("loss_ratio") or 0)
+        lr_pct = lr * 100 if lr <= 1 else lr
+        cells = [
+            s.get("id", ""),
+            s.get("operation") or s.get("lob") or "",
+            badge(s.get("risk")),
+            _score_bar(int(s.get("score") or 0), s.get("risk")),
+            f"{lr_pct:.0f}%",
+            str(s.get("fleet_size") or ""),
+            s.get("premium") or "",
+            s.get("status") or "",
+            ("✓" if s.get("referral") else "—"),
+        ]
+        for c, val in zip(col[1:], cells):
+            c.markdown(f'<div style="font-size:12.5px;color:#d5dbe6;padding-top:6px;">{val}</div>',
+                       unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -190,7 +271,7 @@ def show_detail(sel):
             s1, s2 = st.columns(2)
             with s1:
                 st.markdown("**Submission Snapshot**")
-                snap = {"Fleet Size": detail.get("fleet_size"), "Drivers": detail.get("driver_count"),
+                snap = {"Fleet Size": detail.get("fleet_size"), "Drivers (scheduled)": detail.get("driver_count"),
                         "Loss Ratio (3yr)": data._pct(detail.get("loss_ratio")),
                         "Annual Revenue": detail.get("annual_revenue"), "State": detail.get("state"),
                         "Premium": detail.get("premium"), "Underwriter": detail.get("underwriter")}
@@ -213,16 +294,35 @@ def show_detail(sel):
                         submission_id=detail["id"], user_id=ident["email"] or ident["name"],
                         decision=_outcome, ai_recommendation=a.get("verdict", ""),
                         session_id=st.session_state.session_id)
-                    st.toast(_outcome if ok else f"{_outcome} (not persisted — no warehouse configured)")
+                    if ok:
+                        st.toast(f"✓ {_outcome} — decision recorded to the audit log")
+                    elif data.warehouse_ready():
+                        st.toast(f"{_outcome} — demo action (decision log not available; not persisted)")
+                    else:
+                        st.toast(f"{_outcome} — demo only (no warehouse configured; not persisted)")
+            st.caption("Decisions persist to the audit log when a SQL warehouse and decision table are "
+                       "configured; otherwise they are demo-only and not saved.")
 
         with tabs[1]:
-            st.dataframe(pd.DataFrame(data.claims_for(detail["id"])), hide_index=True, use_container_width=True)
+            _c = data.claims_for(detail["id"])
+            (st.dataframe(pd.DataFrame(_c), hide_index=True, use_container_width=True)
+             if _c else st.info("No claims linked to this submission."))
         with tabs[2]:
-            st.dataframe(pd.DataFrame(data.loss_runs_for(detail["id"])), hide_index=True, use_container_width=True)
+            _l = data.loss_runs_for(detail["id"])
+            (st.dataframe(pd.DataFrame(_l), hide_index=True, use_container_width=True)
+             if _l else st.info("No loss runs linked to this submission."))
         with tabs[3]:
-            st.dataframe(pd.DataFrame(data.drivers_for(detail["id"])), hide_index=True, use_container_width=True)
+            _drv = data.drivers_for(detail["id"])
+            _sched = detail.get("driver_count")
+            if _sched is not None:
+                st.caption(f"{len(_drv)} driver record(s) on file · {_sched} scheduled per application")
+            (st.dataframe(pd.DataFrame(_drv), hide_index=True, use_container_width=True)
+             if _drv else st.info("No driver records are linked to this submission in the warehouse "
+                                  "(driver schedule pending upload / insured not yet linked)."))
         with tabs[4]:
-            st.dataframe(pd.DataFrame(data.documents_for(detail["id"])), hide_index=True, use_container_width=True)
+            _docs = data.documents_for(detail["id"])
+            (st.dataframe(pd.DataFrame(_docs), hide_index=True, use_container_width=True)
+             if _docs else st.info("No parsed documents available for this submission."))
         with tabs[5]:
             st.text_area("Notes", placeholder="Add underwriter notes...", label_visibility="collapsed")
 
