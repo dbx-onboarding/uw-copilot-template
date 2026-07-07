@@ -25,8 +25,14 @@ export default function Detail({ summary, sessionId, onBack, toast }) {
 
   const decide = async (decision) => {
     setDecided(decision);
-    try { await api.decision({ submission_id: detail.id, decision, reason: notes || null }); } catch {}
-    toast(`${decision} recorded for ${detail.name}`);
+    let ok = false;
+    try {
+      const r = await api.decision({ submission_id: detail.id, decision, reason: notes || null });
+      ok = !!r?.ok;
+    } catch {}
+    toast(ok
+      ? `✓ ${decision} — recorded to the audit log`
+      : `${decision} — demo action (not persisted; connect a warehouse to save)`);
   };
 
   return (
@@ -65,7 +71,7 @@ export default function Detail({ summary, sessionId, onBack, toast }) {
           )}
           {tab === "Claims" && <ClaimsTab id={detail.id} />}
           {tab === "Loss Runs" && <LossRunsTab id={detail.id} />}
-          {tab === "Drivers" && <DriversTab id={detail.id} />}
+          {tab === "Drivers" && <DriversTab id={detail.id} scheduled={detail.driver_count} />}
           {tab === "Documents" && <DocumentsTab id={detail.id} />}
           {tab === "Notes" && (
             <textarea
@@ -111,7 +117,7 @@ function Overview({ detail, a, verdict, conf, decided, decide }) {
     ["Operation", detail.operation || "Commercial Auto"],
     ["Commodity", detail.commodity],
     ["Fleet Size", detail.fleet_size],
-    ["Drivers", detail.driver_count],
+    ["Drivers (scheduled)", detail.driver_count],
     ["Loss Ratio (3yr)", pct(detail.loss_ratio)],
     ["Annual Revenue", detail.annual_revenue],
     ["Years in Business", detail.years_in_business],
@@ -216,9 +222,17 @@ function LossRunsTab({ id }) {
   ]} />;
 }
 
-function DriversTab({ id }) {
+function DriversTab({ id, scheduled }) {
   const d = useTabData(api.drivers, id);
-  return <DataTable rows={d?.drivers} empty="No drivers on record" cols={[
+  const onFile = d?.drivers?.length;
+  return (
+   <>
+    {scheduled != null && (
+      <div className="section-label" style={{ marginBottom: 8 }}>
+        {(onFile ?? 0)} driver record{onFile === 1 ? "" : "s"} on file · {scheduled} scheduled per application
+      </div>
+    )}
+    <DataTable rows={d?.drivers} empty="No driver records linked to this submission (schedule pending upload / insured not yet linked)" cols={[
     { k: "name", label: "Driver" },
     { k: "cdl_class", label: "CDL" },
     { k: "experience", label: "Yrs Exp", num: true },
@@ -228,7 +242,9 @@ function DriversTab({ id }) {
     { k: "accidents", label: "Acc 3yr", num: true },
     { k: "status", label: "Status" },
     { k: "hazmat", label: "HazMat", render: (r) => (r.hazmat ? "Yes" : "No") },
-  ]} />;
+  ]} />
+   </>
+  );
 }
 
 function DocumentsTab({ id }) {

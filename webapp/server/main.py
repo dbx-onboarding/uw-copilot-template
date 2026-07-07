@@ -53,8 +53,10 @@ def identity(request: Request) -> Dict[str, str]:
         or h.get("X-Forwarded-User")
         or ""
     )
-    name = h.get("X-Forwarded-Preferred-Username") or email.split("@")[0] or "Underwriter"
-    name = name.replace(".", " ").replace("_", " ").title()
+    # Display name from the email local-part only — never title-case the domain.
+    local = (email.split("@")[0] if "@" in email else email) \
+        or h.get("X-Forwarded-Preferred-Username") or "underwriter"
+    name = local.replace(".", " ").replace("_", " ").title()
     return {"email": email, "name": name, "role": _resolve_role(email)}
 
 

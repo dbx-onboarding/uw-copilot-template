@@ -48,16 +48,25 @@ from server import data  # noqa: E402
 st.set_page_config(page_title="UW CoPilot", page_icon="🛡", layout="wide",
                    initial_sidebar_state="collapsed")
 
-BRAND = "#f97316"
+BRAND = "#FF3621"  # Databricks red
 st.markdown(f"""
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+  /* Databricks-like look & feel: DM Sans type, red accent, clean tiles */
+  html, body, .stApp, [class*="css"], [data-testid] {{ font-family:'DM Sans','Segoe UI',Roboto,Helvetica,Arial,sans-serif; }}
   section[data-testid="stSidebar"] {{ display:none; }}
-  .stApp {{ background:#0b0e14; }}
-  /* accent for primary buttons + progress + tabs */
-  .stButton>button[kind="primary"] {{ background:{BRAND}; border-color:{BRAND}; color:#1a0e02; font-weight:600; }}
-  div[data-testid="stMetric"] {{ background:#161b26; border:1px solid #262d3c; border-radius:12px; padding:14px 16px; }}
-  div[data-testid="stMetricValue"] {{ font-size:26px; }}
+  .stApp {{ background:#0e1116; color:#e8ebf0; }}
+  .block-container {{ padding-top:2.0rem; }}
+  h1,h2,h3 {{ letter-spacing:-.015em; font-weight:700; color:#f2f4f8; }}
+  .stButton>button {{ border-radius:8px; }}
+  .stButton>button[kind="primary"] {{ background:{BRAND}; border-color:{BRAND}; color:#ffffff; font-weight:600; }}
+  .stButton>button[kind="primary"]:hover {{ background:#e02d18; border-color:#e02d18; }}
+  div[data-testid="stMetric"] {{ background:#161a22; border:1px solid #232a35; border-radius:10px; padding:14px 16px; }}
+  div[data-testid="stMetricValue"] {{ font-size:26px; font-weight:700; }}
+  div[data-testid="stMetricLabel"] {{ color:#9aa4b2; }}
   .stTabs [aria-selected="true"] {{ color:{BRAND}; }}
+  .stTabs [data-baseweb="tab-highlight"] {{ background:{BRAND}; }}
+  [data-testid="stDataFrame"] {{ border:1px solid #232a35; border-radius:8px; }}
   .badge {{ display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; }}
   .b-high {{ background:rgba(240,80,63,.15); color:#f0503f; }}
   .b-med {{ background:rgba(245,166,35,.15); color:#f5a623; }}
@@ -110,28 +119,6 @@ def badge(risk):
 subs = data.submission_queue()
 live = data.warehouse_ready()
 _company = getattr(data.get_config(), "company_name", "Atlas Commercial Insurance") if data.get_config() else "Atlas Commercial Insurance"
-_initials = "".join(w[0] for w in ident["name"].split()[:2]).upper() or "UW"
-
-# ── Simulated Databricks Apps shell (so the screens read as a Databricks App) ──
-st.markdown(f"""
-<div style="display:flex;justify-content:space-between;align-items:center;background:#11151d;
-     border:1px solid #232a36;border-radius:8px;padding:6px 12px;font-size:12px;margin-bottom:6px;">
-  <div style="display:flex;align-items:center;gap:10px;">
-    <span style="display:inline-flex;align-items:center;gap:6px;font-weight:800;color:#ff3621;">
-      <span style="width:12px;height:12px;background:#ff3621;border-radius:2px;display:inline-block;"></span>Databricks</span>
-    <span style="color:#6b7688;">Workspace</span><span style="color:#3a4250;">/</span>
-    <span style="color:#6b7688;">Apps</span><span style="color:#3a4250;">/</span>
-    <span style="color:#e6ebf2;font-weight:600;">atlas-insurance-uw-copilot</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:12px;color:#6b7688;">
-    <span class="badge {'b-low' if live else 'b-med'}">● {'Running' if live else 'Demo'}</span>
-    <span>Serverless · us-east-1</span>
-    <span style="background:#2b3446;color:#cdd6e4;border-radius:50%;width:22px;height:22px;
-          display:inline-flex;align-items:center;justify-content:center;font-weight:700;">{_initials}</span>
-  </div>
-</div>
-<div style="text-align:center;font-size:10px;color:#4c5566;margin-bottom:6px;">Simulated Databricks Apps shell — for demonstration</div>
-""", unsafe_allow_html=True)
 
 # ── App header: logo + title, live badge, identity ────────────────────────────
 _logo = _logo_b64()
@@ -305,24 +292,32 @@ def show_detail(sel):
 
         with tabs[1]:
             _c = data.claims_for(detail["id"])
-            (st.dataframe(pd.DataFrame(_c), hide_index=True, use_container_width=True)
-             if _c else st.info("No claims linked to this submission."))
+            if _c:
+                st.dataframe(pd.DataFrame(_c), hide_index=True, use_container_width=True)
+            else:
+                st.info("No claims linked to this submission.")
         with tabs[2]:
             _l = data.loss_runs_for(detail["id"])
-            (st.dataframe(pd.DataFrame(_l), hide_index=True, use_container_width=True)
-             if _l else st.info("No loss runs linked to this submission."))
+            if _l:
+                st.dataframe(pd.DataFrame(_l), hide_index=True, use_container_width=True)
+            else:
+                st.info("No loss runs linked to this submission.")
         with tabs[3]:
             _drv = data.drivers_for(detail["id"])
             _sched = detail.get("driver_count")
             if _sched is not None:
                 st.caption(f"{len(_drv)} driver record(s) on file · {_sched} scheduled per application")
-            (st.dataframe(pd.DataFrame(_drv), hide_index=True, use_container_width=True)
-             if _drv else st.info("No driver records are linked to this submission in the warehouse "
-                                  "(driver schedule pending upload / insured not yet linked)."))
+            if _drv:
+                st.dataframe(pd.DataFrame(_drv), hide_index=True, use_container_width=True)
+            else:
+                st.info("No driver records are linked to this submission in the warehouse "
+                        "(driver schedule pending upload / insured not yet linked).")
         with tabs[4]:
             _docs = data.documents_for(detail["id"])
-            (st.dataframe(pd.DataFrame(_docs), hide_index=True, use_container_width=True)
-             if _docs else st.info("No parsed documents available for this submission."))
+            if _docs:
+                st.dataframe(pd.DataFrame(_docs), hide_index=True, use_container_width=True)
+            else:
+                st.info("No parsed documents available for this submission.")
         with tabs[5]:
             st.text_area("Notes", placeholder="Add underwriter notes...", label_visibility="collapsed")
 
