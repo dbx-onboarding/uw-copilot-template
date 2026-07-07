@@ -67,6 +67,8 @@ class ChatBody(BaseModel):
     question: str
     session_id: str
     history: List[Dict[str, str]] = []
+    submission_id: str = ""
+    submission_context: Optional[Dict[str, Any]] = None
 
 
 class FeedbackBody(BaseModel):
@@ -139,7 +141,8 @@ def similar(sub_id: str):
 @app.post("/api/chat")
 def chat(body: ChatBody, request: Request):
     ident = identity(request)
-    return data.chat(body.question, body.history, ident["role"], body.session_id)
+    return data.chat(body.question, body.history, ident["role"], body.session_id,
+                     body.submission_id, body.submission_context or {})
 
 
 @app.post("/api/feedback")

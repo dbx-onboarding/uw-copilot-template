@@ -358,7 +358,8 @@ def similar_risks(sub: Dict[str, Any]) -> List[Dict[str, Any]]:
 # Chat (Model Serving proxy)
 # ═══════════════════════════════════════════════════════════════════════════════
 def chat(question: str, history: List[Dict[str, str]], user_role: str,
-         session_id: str) -> Dict[str, Any]:
+         session_id: str, submission_id: str = "",
+         submission_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     w = get_client()
     endpoint = _cfg_attr("serving_endpoint")
     if not (w and endpoint):
@@ -376,10 +377,24 @@ def chat(question: str, history: List[Dict[str, str]], user_role: str,
             ChatMessage(role=ChatMessageRole(m["role"]), content=m["content"])
             for m in history[-10:] if m.get("role") in ("user", "assistant")
         ]
-        msgs.append(ChatMessage(role=ChatMessageRole.USER, content=question))
+        # Prepend submission context so the RAG agent knows which account is open
+        ctx_lines = []
+        if submission_id:
+            ctx_lines.append(f"Submission ID: {submission_id}")
+        if submission_context:
+            for k, v in submission_context.items():
+                if v is not None and v != "":
+                    ctx_lines.append(f"{k}: {v}")
+        if ctx_lines:
+            ctx_block = "[Current Submission Context]\n" + "\n".join(ctx_lines)
+            enriched = f"{ctx_block}\n\n[Question]\n{question}"
+        else:
+            enriched = question
+        msgs.append(ChatMessage(role=ChatMessageRole.USER, content=enriched))
         resp = w.serving_endpoints.query(
             name=endpoint, messages=msgs,
-            extra_params={"user_role": user_role, "session_id": session_id},
+            extra_params={"user_role": user_role, "session_id": session_id,
+                          "submission_id": submission_id},
         )
         return {"answer": resp.choices[0].message.content, "healthy": True}
     except Exception as e:

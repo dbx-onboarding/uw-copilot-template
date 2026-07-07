@@ -33,6 +33,23 @@ export default function Chat({ submission, sessionId, toast }) {
       const res = await api.chat({
         question,
         session_id: sessionId,
+        submission_id: submission?.id || "",
+        submission_context: submission ? {
+          "Company":          submission.name,
+          "Submission ID":    submission.id,
+          "Status":           submission.status,
+          "Operation":        submission.operation,
+          "Commodity":        submission.commodity,
+          "Fleet Size":       submission.fleet_size,
+          "Drivers":          submission.driver_count,
+          "Loss Ratio (3yr)": submission.loss_ratio
+                                ? `${Math.floor(submission.loss_ratio * 100)}%`
+                                : null,
+          "Premium":          submission.premium,
+          "Underwriter":      submission.underwriter,
+          "Risk Level":       submission.risk,
+          "Referral Required": submission.referral ? "Yes" : "No",
+        } : {},
         history: next,
       });
       setMessages([...next, { role: "assistant", content: res.answer }]);
