@@ -446,7 +446,22 @@ def record_decision(submission_id: str, user_id: str, decision: str,
                 '{_esc(decision)}', {reason_sql}, '{_esc(insured)}',
                 TIMESTAMP '{now}')
     """
-    return _run_sql(sql) is not None
+    ok = _run_sql(sql) is not None
+    if ok:
+        _STATUS_MAP = {
+            "Approved":       "Quoted",
+            "Referred":       "In Review",
+            "Declined":       "Declined",
+            "Info Requested": "In Review",
+        }
+        new_status = _STATUS_MAP.get(decision)
+        if new_status:
+            _run_sql(f"""
+                UPDATE {_fq('submissions')}
+                SET    submission_status = '{_esc(new_status)}'
+                WHERE  submission_id     = '{_esc(submission_id)}'
+            """)
+    return ok
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

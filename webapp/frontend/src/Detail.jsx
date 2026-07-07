@@ -5,12 +5,57 @@ import Chat from "./Chat.jsx";
 
 const TABS = ["Overview", "Claims", "Loss Runs", "Drivers", "Documents", "Notes"];
 
+const ACTION_CFG = {
+  Approved: {
+    label: "Approve Submission",
+    color: "var(--success)",
+    btnClass: "success",
+    icon: "✓",
+    message: "Approve this submission and move it to the quoting pipeline.",
+    placeholder: "Optional: Add approval conditions or coverage notes...",
+    required: false,
+    newStatus: "Quoted",
+  },
+  Referred: {
+    label: "Refer to Senior UW",
+    color: "var(--warn)",
+    btnClass: "warn",
+    icon: "↗",
+    message: "Escalate this submission to senior underwriting for review.",
+    placeholder: "Required: Describe the reason for referral and any specific concerns...",
+    required: true,
+    newStatus: "In Review",
+  },
+  Declined: {
+    label: "Decline Submission",
+    color: "var(--danger)",
+    btnClass: "danger",
+    icon: "✕",
+    message: "Decline this submission. This action will be recorded in the audit log.",
+    placeholder: "Required: Provide the reason for declining (e.g. loss ratio, commodity exclusion)...",
+    required: true,
+    newStatus: "Declined",
+  },
+  "Info Requested": {
+    label: "Request Additional Info",
+    color: "var(--info)",
+    btnClass: "",
+    icon: "?",
+    message: "Request additional information from the broker before proceeding.",
+    placeholder: "Required: Specify what information is needed from the broker...",
+    required: true,
+    newStatus: "In Review",
+  },
+};
+
 export default function Detail({ summary, sessionId, onBack, toast }) {
   const [detail, setDetail] = useState(summary);
   const [tab, setTab] = useState("Overview");
   const [similar, setSimilar] = useState(null);
   const [notes, setNotes] = useState("");
   const [decided, setDecided] = useState(null);
+  const [modal, setModal] = useState(null);
+  const [modalReason, setModalReason] = useState("");
 
   useEffect(() => {
     let live = true;
@@ -23,17 +68,24 @@ export default function Detail({ summary, sessionId, onBack, toast }) {
   const verdict = a.verdict || "REVIEW";
   const conf = Math.round((a.confidence || 0.85) * 100);
 
-  const decide = async (decision) => {
-    setDecided(decision);
+  const decide = async (action, reason) => {
+    setDecided(action);
+    setModal(null);
     let ok = false;
     try {
-      const r = await api.decision({ submission_id: detail.id, decision, reason: notes || null });
+      const r = await api.decision({ submission_id: detail.id, decision: action, reason: reason || null });
       ok = !!r?.ok;
+      if (ok) {
+        const cfg = ACTION_CFG[action];
+        if (cfg?.newStatus) setDetail(d => ({ ...d, status: cfg.newStatus }));
+      }
     } catch {}
     toast(ok
-      ? `✓ ${decision} — recorded to the audit log`
-      : `${decision} — demo action (not persisted; connect a warehouse to save)`);
+      ? `✓ ${action} — recorded to the audit log`
+      : `${action} — demo action (not persisted; connect a warehouse to save)`);
   };
+
+  const openModal = (action) => { setModalReason(""); setModal({ action }); };
 
   return (
     <>
@@ -67,7 +119,7 @@ export default function Detail({ summary, sessionId, onBack, toast }) {
 
           {tab === "Overview" && (
             <Overview detail={detail} a={a} verdict={verdict} conf={conf}
-                      decided={decided} decide={decide} />
+                      decided={decided} decide={openModal} />
           )}
           {tab === "Claims" && <ClaimsTab id={detail.id} />}
           {tab === "Loss Runs" && <LossRunsTab id={detail.id} />}
@@ -107,6 +159,15 @@ export default function Detail({ summary, sessionId, onBack, toast }) {
           </div>
         </div>
       </div>
+      {modal && (
+        <ActionModal
+          action={modal.action}
+          reason={modalReason}
+          setReason={setModalReason}
+          onConfirm={() => decide(modal.action, modalReason)}
+          onCancel={() => setModal(null)}
+        />
+      )}
     </>
   );
 }
@@ -259,4 +320,43 @@ function DocumentsTab({ id }) {
     ) },
     { k: "date", label: "Date" },
   ]} />;
+}
+
+// ── Action confirmation modal ─────────────────────────────────────────────
+function ActionModal({ action, reason, setReason, onConfirm, onCancel }) {
+  const cfg = ACTION_CFG[action] || {};
+  const blocked = cfg.required && !reason.trim();
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head" style={{ color: cfg.color }}>
+          <span style={{ fontSize: 18 }}>{cfg.icon}</span> {cfg.label}
+        </div>
+        <p className="modal-msg">{cfg.message}</p>
+        <textarea
+          className="modal-textarea"
+          placeholder={cfg.placeholder}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          autoFocus
+        />
+        {cfg.required && !reason.trim() && (
+          <div style={{ fontSize: 12, color: "var(--danger)", marginTop: 4 }}>
+            A reason is required for this action.
+          </div>
+        )}
+        <div className="modal-actions">
+          <button className="btn ghost" onClick={onCancel}>Cancel</button>
+          <button
+            className={`btn ${cfg.btnClass}`}
+            disabled={blocked}
+            style={{ opacity: blocked ? 0.45 : 1 }}
+            onClick={onConfirm}
+          >
+            Confirm — {cfg.label}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
