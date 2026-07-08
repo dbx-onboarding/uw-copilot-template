@@ -405,7 +405,7 @@ def pricing_for(sub_id: str) -> Dict[str, Any]:
     """Derive an indicated premium, rate need vs. expiring, and adequacy of the quote."""
     sql = f"""
         SELECT s.expiring_premium, s.quoted_premium, s.fleet_size, s.loss_ratio_3yr,
-               s.primary_operation
+               s.primary_operation, s.requested_limits
         FROM {_fq('submissions')} s WHERE s.submission_id = '{_esc(sub_id)}' LIMIT 1
     """
     rows = _rows_as_dicts(_run_sql(sql))
@@ -418,6 +418,7 @@ def pricing_for(sub_id: str) -> Dict[str, Any]:
     lr = _num(r.get("loss_ratio_3yr")) or 0
     lr = lr / 100.0 if lr > 1 else lr
     op = r.get("primary_operation") or ""
+    req_limits = r.get("requested_limits") or "1,000,000 CSL"
 
     TREND = 1.077  # ~1.5 yrs of 5% annual loss trend to mid-term
     incurred_3yr = exp * lr if (exp and lr) else None
@@ -440,6 +441,21 @@ def pricing_for(sub_id: str) -> Dict[str, Any]:
     else:
         adequacy = "Indication only — no quote entered"
 
+    # ── Multi-line program structure derived from the auto-liability premium.
+    al = quoted or exp or indicated or 0
+    coverages = [
+        {"line": "Commercial Auto Liability", "limit": req_limits, "deductible": "$2,500", "prem": al},
+        {"line": "Physical Damage", "limit": "ACV / Stated Amount", "deductible": "$5,000", "prem": round(al * 0.45, -2)},
+        {"line": "Motor Truck Cargo", "limit": "$100,000", "deductible": "$2,500", "prem": round(al * 0.08, -2)},
+        {"line": "General Liability", "limit": "$1M / $2M", "deductible": "—", "prem": round(al * 0.12, -2)},
+    ]
+    if op in ("Long Haul", "Regional") or units >= 40:
+        coverages.append({"line": "Commercial Umbrella / Excess", "limit": "$5,000,000",
+                          "deductible": "—", "prem": round(al * 0.20, -2)})
+    program_total = sum(c["prem"] for c in coverages)
+    coverages_out = [{"line": c["line"], "limit": c["limit"], "deductible": c["deductible"],
+                      "premium": _money(c["prem"])} for c in coverages]
+
     return {
         "expiring_premium": _money(exp),
         "quoted_premium": _money(quoted),
@@ -455,6 +471,8 @@ def pricing_for(sub_id: str) -> Dict[str, Any]:
         "units": units,
         "basis": basis,
         "trend_note": "5% annual loss trend applied (~1.5 yr to mid-term).",
+        "coverages": coverages_out,
+        "program_total": _money(program_total),
     }
 
 
@@ -577,6 +595,49 @@ def quote_letter_data(sub_id: str) -> Optional[Dict[str, Any]]:
         "verdict": a.get("verdict") or "REVIEW",
         "subjectivities": a.get("subjectivities") or [],
     }
+
+
+# ── Subjectivity clearing (received / waived, audited) ──────────────────────────
+def subjectivities_for(sub_id: str) -> Dict[str, Any]:
+    d = submission_detail(sub_id) or {}
+    a = d.get("assessment") or {}
+    items = a.get("subjectivities") or []
+    statuses: Dict[str, Dict[str, Any]] = {}
+    if warehouse_ready():
+        sql = f"""
+            SELECT item, status, note, cleared_by, updated_at
+            FROM {_fq('subjectivity_status')} WHERE submission_id = '{_esc(sub_id)}'
+            ORDER BY updated_at ASC
+        """
+        for r in _rows_as_dicts(_run_sql(sql)):
+            statuses[r.get("item")] = r  # append-only: latest row wins
+    out = []
+    for it in items:
+        s = statuses.get(it)
+        out.append({
+            "item": it,
+            "status": (s.get("status") if s else "Open"),
+            "note": (s.get("note") if s else None),
+            "cleared_by": (s.get("cleared_by") if s else None),
+            "updated_at": (str(s.get("updated_at"))[:16] if s else None),
+        })
+    return {"subjectivities": out, "persisted": warehouse_ready()}
+
+
+def record_subjectivity(sub_id: str, item: str, status: str,
+                        user_id: str, note: Optional[str] = None) -> bool:
+    if not warehouse_ready():
+        return False
+    import uuid
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    note_sql = f"'{_esc(note)}'" if note else "NULL"
+    sql = f"""
+        INSERT INTO {_fq('subjectivity_status')}
+            (status_id, submission_id, item, status, note, cleared_by, updated_at)
+        VALUES ('{uuid.uuid4()}', '{_esc(sub_id)}', '{_esc(item)}', '{_esc(status)}',
+                {note_sql}, '{_esc(user_id)}', TIMESTAMP '{now}')
+    """
+    return _run_sql(sql) is not None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

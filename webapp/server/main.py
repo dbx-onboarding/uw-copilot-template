@@ -84,6 +84,12 @@ class DecisionBody(BaseModel):
     reason: Optional[str] = None
 
 
+class SubjectivityBody(BaseModel):
+    item: str
+    status: str          # Open | Received | Waived
+    note: Optional[str] = None
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # API routes
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -151,6 +157,19 @@ def account_intel(sub_id: str):
 @app.get("/api/submissions/{sub_id}/loss-dev")
 def loss_dev(sub_id: str):
     return data.loss_dev_for(sub_id)
+
+
+@app.get("/api/submissions/{sub_id}/subjectivities")
+def subjectivities(sub_id: str):
+    return data.subjectivities_for(sub_id)
+
+
+@app.post("/api/submissions/{sub_id}/subjectivities")
+def clear_subjectivity(sub_id: str, body: SubjectivityBody, request: Request):
+    ident = identity(request)
+    ok = data.record_subjectivity(sub_id, body.item, body.status,
+                                  ident["email"] or ident["name"], body.note)
+    return {"ok": ok, "item": body.item, "status": body.status}
 
 
 @app.get("/api/submissions/{sub_id}/quote-letter")

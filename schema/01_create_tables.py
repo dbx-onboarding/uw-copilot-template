@@ -389,5 +389,23 @@ print(f"  account_intel OK")
 
 # COMMAND ----------
 
+# DBTITLE 1,Subjectivity clearing (append-only audit of quote conditions)
+spark.sql(f"""
+CREATE TABLE IF NOT EXISTS {C}.{S}.subjectivity_status (
+    status_id       STRING      NOT NULL,
+    submission_id   STRING      NOT NULL,
+    item            STRING      NOT NULL COMMENT 'Subjectivity text',
+    status          STRING      NOT NULL COMMENT 'Open, Received, Waived',
+    note            STRING,
+    cleared_by      STRING,
+    updated_at      TIMESTAMP,
+    CONSTRAINT pk_subjectivity_status PRIMARY KEY (status_id)
+)
+COMMENT 'Append-only log of subjectivity clearing; latest row per (submission_id, item) wins.'
+""")
+print(f"  subjectivity_status OK")
+
+# COMMAND ----------
+
 print(f"\n✅ All tables created in {C}.{S}")
 display(spark.sql(f"SHOW TABLES IN {C}.{S}"))

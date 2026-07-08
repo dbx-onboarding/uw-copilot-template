@@ -3,7 +3,7 @@ import { api } from "./api.js";
 import { Icon, RiskBadge, pct, Spinner } from "./ui.jsx";
 import Chat from "./Chat.jsx";
 
-const TABS = ["Overview", "Pricing", "Authority & Safety", "Claims", "Loss Development", "Drivers", "Documents", "Notes"];
+const TABS = ["Overview", "Pricing", "Authority & Safety", "Claims", "Loss Development", "Drivers", "Subjectivities", "Documents", "Notes"];
 
 const ACTION_CFG = {
   Approved: {
@@ -131,6 +131,7 @@ export default function Detail({ summary, sessionId, onBack, toast }) {
           {tab === "Claims" && <ClaimsTab id={detail.id} newBiz={detail.account_type === "New Business"} />}
           {tab === "Loss Development" && <LossDevTab id={detail.id} newBiz={detail.account_type === "New Business"} />}
           {tab === "Drivers" && <DriversTab id={detail.id} scheduled={detail.driver_count} newBiz={detail.account_type === "New Business"} />}
+          {tab === "Subjectivities" && <SubjectivitiesTab id={detail.id} toast={toast} />}
           {tab === "Documents" && <DocumentsTab id={detail.id} />}
           {tab === "Notes" && (
             <textarea
@@ -370,6 +371,69 @@ function PricingTab({ id }) {
       <div style={{ fontSize: 12, color: "var(--subtle)", marginTop: 12, lineHeight: 1.6 }}>
         <b>Basis:</b> {d.basis}<br />{d.trend_note} Indicated premium brings expected losses to the {d.target_loss_ratio} target loss ratio. This is a working indication — confirm class rates and schedule mods in the rating workbook before quoting.
       </div>
+
+      {d.coverages && d.coverages.length > 0 && (<>
+        <div className="section-label" style={{ marginTop: 22 }}>Program Structure</div>
+        <DataTable rows={d.coverages} empty="—" cols={[
+          { k: "line", label: "Coverage" },
+          { k: "limit", label: "Limit" },
+          { k: "deductible", label: "Deductible" },
+          { k: "premium", label: "Premium", num: true },
+        ]} />
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 4px 0", borderTop: "1px solid var(--border)", marginTop: 2, fontWeight: 800 }}>
+          <span>Total program premium</span><span>{d.program_total}</span>
+        </div>
+        <div style={{ fontSize: 11.5, color: "var(--subtle)", marginTop: 6 }}>
+          Ancillary-line premiums are indicative, derived from the auto-liability layer — finalize each line in its rating module.
+        </div>
+      </>)}
+    </>
+  );
+}
+
+function SubjectivitiesTab({ id, toast }) {
+  const [data, setData] = useState(null);
+  const [busy, setBusy] = useState(null);
+  useEffect(() => {
+    let live = true;
+    api.subjectivities(id).then((r) => live && setData(r)).catch(() => live && setData({ subjectivities: [], persisted: false }));
+    return () => { live = false; };
+  }, [id]);
+  if (data === null) return <Spinner />;
+  const items = data.subjectivities || [];
+  if (items.length === 0) return <div className="empty" style={{ padding: 30 }}>No subjectivities recommended for this account.</div>;
+  const cleared = items.filter((i) => i.status !== "Open").length;
+  const set = async (item, status) => {
+    setBusy(item);
+    setData((d) => ({ ...d, subjectivities: d.subjectivities.map((s) => (s.item === item ? { ...s, status } : s)) }));
+    try {
+      const r = await api.clearSubjectivity(id, { item, status });
+      toast(r.ok ? `Subjectivity marked ${status} — recorded` : `${status} — demo action (not persisted; connect a warehouse to save)`);
+    } catch { toast("Couldn't save — please retry"); }
+    finally { setBusy(null); }
+  };
+  return (
+    <>
+      <div className="mini-stats" style={{ marginBottom: 14 }}>
+        <span className="mini-stat">{cleared} of {items.length} cleared</span>
+        {cleared === items.length && <span className="mini-stat">All conditions satisfied — clear to bind</span>}
+        {!data.persisted && <span className="mini-stat warn">Demo — changes not persisted (no warehouse)</span>}
+      </div>
+      {items.map((s, i) => (
+        <div className="subj-row" key={i}>
+          <div className="subj-text">
+            {s.item}
+            {s.cleared_by && <div className="subj-meta">{s.status} · {s.cleared_by}{s.updated_at ? ` · ${s.updated_at}` : ""}</div>}
+          </div>
+          <div className="subj-btns">
+            {["Open", "Received", "Waived"].map((st) => (
+              <button key={st} disabled={busy === s.item}
+                className={`subj-btn ${s.status === st ? `active ${st.toLowerCase()}` : ""}`}
+                onClick={() => set(s.item, st)}>{st}</button>
+            ))}
+          </div>
+        </div>
+      ))}
     </>
   );
 }
