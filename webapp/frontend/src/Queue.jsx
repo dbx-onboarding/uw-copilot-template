@@ -106,7 +106,7 @@ export default function Queue({ subs, onOpen }) {
                   <td>{pct(s.loss_ratio)}</td>
                   <td style={{ fontWeight: 600 }}>{s.premium || "—"}</td>
                   <td style={{ color: "var(--muted)" }}>{s.owner || s.underwriter || "—"}</td>
-                  <td>{s.aging ? <AgingPill s={s} /> : "—"}</td>
+                  <td>{s.aging && s.aging !== "—" ? <AgingPill s={s} /> : <span style={{ color: "var(--subtle)" }}>—</span>}</td>
                   <td style={{ color: "var(--muted)" }}>{s.status}</td>
                 </tr>
               ))}

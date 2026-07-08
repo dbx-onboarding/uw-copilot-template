@@ -151,9 +151,11 @@ def submission_queue() -> List[Dict[str, Any]]:
         except Exception:
             pass
         is_open = str(status).lower() in _OPEN
-        if days is not None and is_open and days > 7:
+        if not is_open:
+            aging = "—"                      # Declined / Bound / Lost — no SLA clock
+        elif days is not None and days > 7:
             aging = "Overdue"
-        elif days is not None and is_open and days >= 5:
+        elif days is not None and days >= 5:
             aging = "Due soon"
         else:
             aging = "On track"
@@ -169,7 +171,7 @@ def submission_queue() -> List[Dict[str, Any]]:
             "account_type": "Renewal" if r.get("expiring_premium") not in (None, 0) else "New Business",
             "score": score,
             "risk": risk,
-            "referral": bool(r.get("referral_required")),
+            "referral": _truthy(r.get("referral_required")),
             "fleet_size": r.get("fleet_size"),
             "driver_count": r.get("driver_count"),
             "loss_ratio": lr_dec,
@@ -221,7 +223,7 @@ def submission_detail(sub_id: str) -> Optional[Dict[str, Any]]:
     exp = (row or {}).get("expiring_premium")
     has_expiring = exp not in (None, 0, "0", "")
     detail["account_type"] = "Renewal" if has_expiring else "New Business"
-    detail["has_history"] = bool((row or {}).get("num_claims"))
+    detail["has_history"] = (_num((row or {}).get("num_claims")) or 0) > 0
 
     if row:
         detail.update({
@@ -307,7 +309,7 @@ def drivers_for(sub_id: str) -> List[Dict[str, Any]]:
                 "status": r.get("driver_status"),
                 "accidents": r.get("accidents_3yr"),
                 "violations": r.get("violations_3yr"),
-                "hazmat": bool(r.get("hazmat_endorsement")),
+                "hazmat": _truthy(r.get("hazmat_endorsement")),
                 "telematics": r.get("telematics_score"),
             } for r in rows]
     return [] if warehouse_ready() else _demo_drivers()
@@ -334,8 +336,8 @@ def vehicles_for(sub_id: str) -> List[Dict[str, Any]]:
                 "value": _money(r.get("stated_value")),
                 "radius": r.get("radius_class"),
                 "state": r.get("garage_state"),
-                "dashcam": bool(r.get("has_dashcam")),
-                "eld": bool(r.get("has_eld")),
+                "dashcam": _truthy(r.get("has_dashcam")),
+                "eld": _truthy(r.get("has_eld")),
                 "inspection": r.get("inspection_result"),
                 "inspection_date": str(r.get("last_inspection_date") or "")[:10],
                 "mileage": r.get("annual_mileage"),
@@ -539,6 +541,19 @@ def _num(v):
         return None
 
 
+def _truthy(v) -> bool:
+    """
+    The SQL Statement Execution API returns every value as a STRING, so a BOOLEAN
+    column comes back as the text "true"/"false" — and bool("false") is True in
+    Python. This coerces those strings (and 0/1) to a real boolean.
+    """
+    if isinstance(v, bool):
+        return v
+    if v is None:
+        return False
+    return str(v).strip().lower() in ("true", "t", "1", "yes", "y")
+
+
 def pricing_for(sub_id: str) -> Dict[str, Any]:
     """Derive an indicated premium, rate need vs. expiring, and adequacy of the quote."""
     sql = f"""
@@ -649,9 +664,9 @@ def account_intel_for(sub_id: str) -> Dict[str, Any]:
         "authority_granted": granted[:10],
         "authority_age_years": age,
         "new_authority": (age is not None and age < 3),
-        "mcs150_current": bool(r.get("mcs150_current")),
-        "mcs90_on_file": bool(r.get("mcs90_on_file")),
-        "bmc91_on_file": bool(r.get("bmc91_on_file")),
+        "mcs150_current": _truthy(r.get("mcs150_current")),
+        "mcs90_on_file": _truthy(r.get("mcs90_on_file")),
+        "bmc91_on_file": _truthy(r.get("bmc91_on_file")),
         "oos_vehicle_pct": veh, "national_oos_vehicle_avg": nveh,
         "vehicle_oos_alert": (veh is not None and nveh is not None and veh > nveh),
         "oos_driver_pct": drv, "national_oos_driver_avg": ndrv,
@@ -982,7 +997,7 @@ def list_app_feedback(limit: int = 50) -> List[Dict[str, Any]]:
     rows = _rows_as_dicts(_run_sql(sql))
     out = []
     for r in rows:
-        anon = bool(r.get("anonymous"))
+        anon = _truthy(r.get("anonymous"))
         out.append({
             "name": "Anonymous" if anon else (r.get("name") or "Anonymous"),
             "role": r.get("role") or "",
@@ -1072,7 +1087,7 @@ def _build_assessment(row: Optional[Dict[str, Any]], base: Dict[str, Any]) -> Di
     lr = lr / 100.0 if lr > 1 else lr
     safety = str(g("safety_rating", "") or "").upper()
     csa = float(g("csa_unsafe_driving", 0) or 0)
-    referral = bool(g("referral_required", base.get("referral", False)))
+    referral = _truthy(g("referral_required", base.get("referral", False)))
     fleet = int(g("fleet_size", 0) or 0)
     large = int(g("large_losses", 0) or 0)
     dashcam = float(g("dashcam_coverage_pct", 0) or 0)
