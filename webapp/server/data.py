@@ -647,47 +647,63 @@ _EXCLUDE_CATS = {"underwriting_manual", "risk_appetite", "endorsement", "regulat
 
 
 def similar_risks(sub: Dict[str, Any]) -> List[Dict[str, Any]]:
-    w = get_client()
-    idx = _cfg_attr("vs_index")
-    if not (w and idx):
-        return _demo_similar_risks()
-    lr = float(sub.get("loss_ratio") or 0)
-    query = (
-        f"commercial trucking fleet {sub.get('fleet_size') or ''} vehicles "
-        f"{sub.get('state') or ''} loss ratio {lr:.0%} submission loss run claims history"
-    )
-    try:
-        resp = w.vector_search_indexes.query_index(
-            index_name=idx,
-            columns=["chunk_id", "parent_id", "chunk_text", "category", "source_path"],
-            query_text=query, num_results=20, query_type="HYBRID",
-        )
-        rows = getattr(getattr(resp, "result", None), "data_array", None) or []
-        seen: Dict[str, Dict] = {}
-        for row in rows:
-            if len(row) < 5:
+    """
+    Find comparable accounts in the in-force book using a transparent similarity
+    over operation, commodity, fleet size and loss ratio — named accounts with an
+    explainable score, not opaque document matches.
+    """
+    sub_id = sub.get("id") or ""
+    op = (sub.get("operation") or "").strip().lower()
+    com = (sub.get("commodity") or "").strip().lower()
+    fleet = _num(sub.get("fleet_size")) or 0
+    lr = _num(sub.get("loss_ratio")) or 0
+    lr = lr / 100.0 if lr > 1 else lr
+
+    # Candidate pool: the book (live) or the demo submissions.
+    cands: List[Dict[str, Any]] = []
+    if warehouse_ready():
+        sql = f"""
+            SELECT submission_id, company_name, primary_operation, primary_commodity,
+                   fleet_size, loss_ratio_3yr
+            FROM {_fq('submissions')} WHERE submission_id <> '{_esc(sub_id)}'
+        """
+        for r in _rows_as_dicts(_run_sql(sql)):
+            clr = _num(r.get("loss_ratio_3yr")) or 0
+            cands.append({
+                "name": r.get("company_name"),
+                "op": (r.get("primary_operation") or ""),
+                "com": (r.get("primary_commodity") or ""),
+                "fleet": _num(r.get("fleet_size")) or 0,
+                "lr": clr / 100.0 if clr > 1 else clr,
+            })
+    else:
+        for s in _demo_submissions():
+            if s.get("id") == sub_id:
                 continue
-            category = (row[3] or "").strip().lower()
-            if category in _EXCLUDE_CATS:
-                continue
-            source = row[4] or ""
-            score = float(row[5]) if len(row) > 5 else 0.0
-            fname = source.rstrip("/").split("/")[-1]
-            key = fname.rsplit(".", 1)[0] if fname else source[:60]
-            if not key:
-                continue
-            if key not in seen or score > seen[key]["score"]:
-                seen[key] = {
-                    "company": _fmt_doc_name(key),
-                    "category": category.replace("_", " ").title(),
-                    "score": score,
-                    "similarity": min(int(score * 100), 99),
-                    "live": True,
-                }
-        out = sorted(seen.values(), key=lambda x: -x["score"])[:4]
-        return out or _demo_similar_risks()
-    except Exception:
-        return _demo_similar_risks()
+            cands.append({"name": s.get("name"), "op": s.get("operation") or "",
+                          "com": s.get("commodity") or "", "fleet": s.get("fleet_size") or 0,
+                          "lr": s.get("loss_ratio") or 0})
+
+    scored = []
+    for c in cands:
+        s = 0.0
+        if op and c["op"].lower() == op:
+            s += 35
+        if com and c["com"].lower() == com:
+            s += 20
+        cf = c["fleet"] or 0
+        denom = max(fleet, cf, 1)
+        s += 25 * (1 - min(abs(cf - fleet) / denom, 1))          # fleet-size proximity
+        s += 20 * (1 - min(abs((c["lr"] or 0) - lr), 1))          # loss-ratio proximity
+        sim = int(min(round(s), 99))
+        lr_txt = f"{(c['lr'] or 0) * 100:.0f}% LR"
+        desc = " · ".join([p for p in [c["op"], f"{int(cf)} units" if cf else "", lr_txt] if p])
+        scored.append({"company": c["name"], "category": desc, "score": s,
+                       "similarity": sim, "live": warehouse_ready()})
+
+    scored.sort(key=lambda x: -x["score"])
+    out = [x for x in scored if x["company"]][:4]
+    return out or _demo_similar_risks()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
