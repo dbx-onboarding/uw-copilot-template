@@ -140,6 +140,23 @@ body {
   border: 1px solid var(--brand); border-radius: 5px; padding: 2px 6px; width: 120px; outline: none; }
 .chat-tab.history { margin-left: auto; color: var(--muted); }
 .chat-tab.history.active { color: var(--text); }
+/* ── Feedback form + feed ────────────────────────────────────────────────── */
+.ff-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.ff { display: flex; flex-direction: column; gap: 5px; }
+.ff span { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.ff input, .ff textarea { background: var(--surface); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 11px; font-size: 13px; font-family: var(--sans); outline: none; }
+.ff input:focus, .ff textarea:focus { border-color: var(--brand); }
+.ff input:disabled { opacity: 0.5; }
+.ff textarea { resize: vertical; }
+.ff-check { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--muted); cursor: pointer; }
+.ff-check input { width: 15px; height: 15px; accent-color: var(--brand); }
+.fb-feed { display: flex; flex-direction: column; gap: 10px; }
+.fb-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; }
+.fb-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 5px; }
+.fb-who { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.fb-when { font-size: 11px; color: var(--subtle); white-space: nowrap; }
+.fb-body { font-size: 13px; color: var(--muted); line-height: 1.55; }
 .doc-filter { background: var(--surface); color: var(--text); border: 1px solid var(--border);
   border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: var(--sans); cursor: pointer; }
 .hist-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;

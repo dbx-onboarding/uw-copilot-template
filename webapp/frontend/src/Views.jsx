@@ -387,3 +387,73 @@ export function SettingsView() {
     </>
   );
 }
+
+// ── FEEDBACK ────────────────────────────────────────────────────────────────────
+export function FeedbackView({ me, toast }) {
+  const [name, setName] = useState(me?.name || "");
+  const [role, setRole] = useState(me?.role ? me.role.replace(/_/g, " ") : "");
+  const [company, setCompany] = useState(me?.company || "");
+  const [feedback, setFeedback] = useState("");
+  const [anon, setAnon] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [list, setList] = useState(null);
+
+  const load = () => api.appFeedbackList().then((r) => setList(r.feedback || [])).catch(() => setList([]));
+  useEffect(() => { load(); }, []);
+
+  const submit = async () => {
+    if (!feedback.trim() || busy) return;
+    setBusy(true);
+    try {
+      const r = await api.appFeedback({ name: anon ? "" : name, role, company: anon ? "" : company, feedback, anonymous: anon });
+      toast(r.ok ? "Thanks — your feedback was recorded" : "Feedback captured (demo — connect a warehouse to persist)");
+      setFeedback("");
+      load();
+    } catch { toast("Couldn't submit — please retry"); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <>
+      <PageHead title="Feedback" sub="Tell us what's working and what to improve. You can submit anonymously." />
+      <div className="panel card-pad" style={{ maxWidth: 680 }}>
+        <div className="ff-grid">
+          <label className="ff"><span>Name</span>
+            <input value={anon ? "" : name} disabled={anon} onChange={(e) => setName(e.target.value)} placeholder={anon ? "Hidden (anonymous)" : "Your name"} /></label>
+          <label className="ff"><span>Role</span>
+            <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="e.g. Underwriter" /></label>
+          <label className="ff"><span>Company</span>
+            <input value={anon ? "" : company} disabled={anon} onChange={(e) => setCompany(e.target.value)} placeholder={anon ? "Hidden (anonymous)" : "Company"} /></label>
+        </div>
+        <label className="ff" style={{ display: "block", marginTop: 12 }}><span>Feedback</span>
+          <textarea rows={5} value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="What did you like? What would make this better?" /></label>
+        <label className="ff-check">
+          <input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} />
+          Submit anonymously — your name &amp; company won't be stored
+        </label>
+        <div style={{ marginTop: 14 }}>
+          <button className="btn primary" disabled={busy || !feedback.trim()} onClick={submit}>
+            {busy ? "Submitting…" : "Submit feedback"}
+          </button>
+        </div>
+      </div>
+
+      <div className="section-label" style={{ marginTop: 26 }}>Recent feedback</div>
+      {list === null ? <Spinner label="Loading" /> : list.length === 0 ? (
+        <div className="panel card-pad"><div className="empty">No feedback yet — be the first.</div></div>
+      ) : (
+        <div className="fb-feed">
+          {list.map((f, i) => (
+            <div className="fb-card" key={i}>
+              <div className="fb-top">
+                <span className="fb-who">{f.name}{f.role ? ` · ${f.role}` : ""}{f.company ? ` · ${f.company}` : ""}</span>
+                <span className="fb-when">{f.when}</span>
+              </div>
+              <div className="fb-body">{f.feedback}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}

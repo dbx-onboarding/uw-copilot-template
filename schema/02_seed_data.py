@@ -152,8 +152,12 @@ spark.sql(f"""INSERT INTO {C}.{S}.vehicles VALUES ('VEH-3001','INS-1001','ACI-AL
 ('VEH-3030','INS-1005','ACI-AL-25-553872','3HSDJAPR8CN567890',2017,'International','LT','Day Cab',73000,62000.00,'Local','TX','75201',false,true,'2025-08-12','Conditional',68000),
 ('VEH-3031','INS-1005','ACI-AL-25-553872','1HTSDAAN4JH678901',2016,'International','ProStar','Straight Truck',54000,45000.00,'Local','TX','75201',false,true,'2025-08-12','Fail',72000),
 ('VEH-3040','INS-1006','ACI-AL-25-618934','1XKYDP9X7TJ234567',2024,'Kenworth','T680','Sleeper Tractor',80000,178000.00,'Regional','CO','80201',true,true,'2026-06-01','Pass',105000),
-('VEH-3041','INS-1006','ACI-AL-25-618934','3AKJHHDR2RSBC8901',2023,'Freightliner','Cascadia','Sleeper Tractor',80000,158000.00,'Regional','WY','82001',true,true,'2026-06-01','Pass',112000)""")
-print("  vehicles: 13")
+('VEH-3041','INS-1006','ACI-AL-25-618934','3AKJHHDR2RSBC8901',2023,'Freightliner','Cascadia','Sleeper Tractor',80000,158000.00,'Regional','WY','82001',true,true,'2026-06-01','Pass',112000),
+('VEH-3050','INS-1014','ACI-AL-25-514021','1XKYDP9X5RJ514050',2022,'Kenworth','T680','Sleeper Tractor',80000,152000.00,'Long Haul','TN','37201',true,true,'2026-04-01','Pass',135000),
+('VEH-3051','INS-1014','ACI-AL-25-514021','3AKJHHDR4NS514051',2021,'Freightliner','Cascadia','Sleeper Tractor',80000,138000.00,'Long Haul','TN','37201',true,true,'2026-04-01','Pass',142000),
+('VEH-3052','INS-1014','ACI-AL-25-514021','1XPBDP9X8MD514052',2023,'Peterbilt','579','Sleeper Tractor',80000,165000.00,'Long Haul','GA','30301',true,true,'2026-04-01','Pass',128000),
+('VEH-3053','INS-1014','ACI-AL-25-514021','4V4NC9EH5EN514053',2020,'Volvo','VNL 860','Sleeper Tractor',80000,121000.00,'Long Haul','TN','37201',false,true,'2026-04-01','Conditional',151000)""")
+print("  vehicles: 17")
 
 # COMMAND ----------
 

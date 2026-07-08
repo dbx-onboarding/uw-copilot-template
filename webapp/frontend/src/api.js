@@ -31,6 +31,8 @@ export const api = {
     j(`/api/documents?q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}`),
   settings: () => j("/api/settings"),
   history: () => j("/api/history"),
+  appFeedbackList: () => j("/api/app-feedback"),
+  appFeedback: (body) => j("/api/app-feedback", { method: "POST", body: JSON.stringify(body) }),
   chat: (body) => j("/api/chat", { method: "POST", body: JSON.stringify(body) }),
   feedback: (body) => j("/api/feedback", { method: "POST", body: JSON.stringify(body) }),
   decision: (body) => j("/api/decisions", { method: "POST", body: JSON.stringify(body) }),

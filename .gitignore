@@ -46,3 +46,8 @@ config/secrets.yaml
 
 # Databricks local state
 .databricks/
+
+# Executive demo prep — presentation scripts, not app code (keep out of the repo)
+webapp/EXEC_DEMO_TRANSCRIPT.md
+webapp/EXEC_DEMO_SCRIPT.md
+webapp/WHY_RAG_PRIMER.md

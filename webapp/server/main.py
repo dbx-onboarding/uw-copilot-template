@@ -90,6 +90,14 @@ class SubjectivityBody(BaseModel):
     note: Optional[str] = None
 
 
+class AppFeedbackBody(BaseModel):
+    name: Optional[str] = ""
+    role: Optional[str] = ""
+    company: Optional[str] = ""
+    feedback: str
+    anonymous: bool = False
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # API routes
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -345,6 +353,22 @@ def chat(body: ChatBody, request: Request):
 def history(request: Request):
     ident = identity(request)
     return data.conversation_history(ident["email"] or ident["name"])
+
+
+@app.get("/api/app-feedback")
+def list_app_feedback():
+    return {"feedback": data.list_app_feedback()}
+
+
+@app.post("/api/app-feedback")
+def submit_app_feedback(body: AppFeedbackBody, request: Request):
+    ident = identity(request)
+    ok = data.record_app_feedback(
+        name=body.name or "", role=body.role or "", company=body.company or "",
+        feedback=body.feedback, anonymous=body.anonymous,
+        user_email="" if body.anonymous else (ident["email"] or ""),
+    )
+    return {"ok": ok}
 
 
 @app.post("/api/feedback")

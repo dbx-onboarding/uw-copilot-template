@@ -407,6 +407,25 @@ print(f"  subjectivity_status OK")
 
 # COMMAND ----------
 
+# DBTITLE 1,Product feedback (from the in-app Feedback tab)
+spark.sql(f"""
+CREATE TABLE IF NOT EXISTS {C}.{S}.app_feedback (
+    feedback_id  STRING      NOT NULL,
+    name         STRING      COMMENT 'NULL when submitted anonymously',
+    role         STRING,
+    company      STRING      COMMENT 'NULL when submitted anonymously',
+    feedback     STRING      NOT NULL,
+    anonymous    BOOLEAN,
+    user_email   STRING      COMMENT 'SSO email; NULL when anonymous',
+    created_at   TIMESTAMP,
+    CONSTRAINT pk_app_feedback PRIMARY KEY (feedback_id)
+)
+COMMENT 'Product feedback captured from the in-app Feedback tab.'
+""")
+print(f"  app_feedback OK")
+
+# COMMAND ----------
+
 # DBTITLE 1,Evaluation harness output (RAG quality / regression testing)
 spark.sql(f"""
 CREATE TABLE IF NOT EXISTS {C}.{S}.eval_results (

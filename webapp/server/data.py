@@ -949,6 +949,51 @@ def conversation_history(user_id: str, limit: int = 200) -> Dict[str, Any]:
     return {"items": items, "persisted": True}
 
 
+def record_app_feedback(name: str, role: str, company: str, feedback: str,
+                        anonymous: bool, user_email: str = "") -> bool:
+    """Persist product feedback from the in-app Feedback tab."""
+    if not warehouse_ready() or not (feedback or "").strip():
+        return False
+    import uuid
+    if anonymous:
+        name, company, user_email = "", company if False else "", ""
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    nm = f"'{_esc(name)}'" if name else "NULL"
+    co = f"'{_esc(company)}'" if company else "NULL"
+    rl = f"'{_esc(role)}'" if role else "NULL"
+    em = f"'{_esc(user_email)}'" if user_email else "NULL"
+    sql = f"""
+        INSERT INTO {_fq('app_feedback')}
+            (feedback_id, name, role, company, feedback, anonymous, user_email, created_at)
+        VALUES ('{uuid.uuid4()}', {nm}, {rl}, {co}, '{_esc(feedback)}',
+                {str(bool(anonymous)).lower()}, {em}, TIMESTAMP '{now}')
+    """
+    return _run_sql(sql) is not None
+
+
+def list_app_feedback(limit: int = 50) -> List[Dict[str, Any]]:
+    """Recent product feedback for the Feedback tab (anonymous entries masked)."""
+    if not warehouse_ready():
+        return _demo_app_feedback()
+    sql = f"""
+        SELECT name, role, company, feedback, anonymous, created_at
+        FROM {_fq('app_feedback')} ORDER BY created_at DESC LIMIT {int(limit)}
+    """
+    rows = _rows_as_dicts(_run_sql(sql))
+    out = []
+    for r in rows:
+        anon = bool(r.get("anonymous"))
+        out.append({
+            "name": "Anonymous" if anon else (r.get("name") or "Anonymous"),
+            "role": r.get("role") or "",
+            "company": "" if anon else (r.get("company") or ""),
+            "feedback": r.get("feedback"),
+            "anonymous": anon,
+            "when": str(r.get("created_at") or "")[:16],
+        })
+    return out
+
+
 def record_feedback(user_id: str, query: str, response: str, rating: str,
                     session_id: str, user_role: str) -> bool:
     """
@@ -1289,6 +1334,14 @@ def _demo_account_intel() -> Dict[str, Any]:
         "oos_driver_pct": 6.1, "national_oos_driver_avg": 5.5, "driver_oos_alert": True,
         "crash_rate_per_100": 3.1, "csa_as_of": "2026-06-01", "loss_runs_valued": "2026-05-15",
     }
+
+
+def _demo_app_feedback() -> List[Dict[str, Any]]:
+    return [
+        {"name": "Sarah Mitchell", "role": "Senior Underwriter", "company": "Atlas Commercial Insurance", "feedback": "The explainable AI card with rule citations is exactly what I needed — I trust it now.", "anonymous": False, "when": "2026-07-07 14:20"},
+        {"name": "Anonymous", "role": "Underwriter", "company": "", "feedback": "Love the CoPilot citations. Would like driver-level MVR drill-in next.", "anonymous": True, "when": "2026-07-06 09:51"},
+        {"name": "David Chen", "role": "VP Underwriting", "company": "Atlas Commercial Insurance", "feedback": "Portfolio Score decomposition is a great exec view. Ship it.", "anonymous": False, "when": "2026-07-05 16:03"},
+    ]
 
 
 def _demo_vehicles() -> List[Dict[str, Any]]:

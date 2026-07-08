@@ -97,10 +97,17 @@ fallback message.
 
 ## 5. Suggested CoPilot questions that demo well
 
-- "Summarize the 3-year loss history and what's driving it."
-- "Are there any referral triggers on this account?"
-- "How does this fleet's CSA profile compare to appetite?"
+Ask **guideline / appetite / procedure** questions — these are answerable from the
+1,500-doc corpus and return grounded, cited answers:
+
+- "What are Atlas's referral triggers for an account like this?"
+- "What's our risk appetite for long-haul general freight?"
 - "What conditions would you recommend to quote this risk?"
+- "What are the driver qualification requirements?"
+
+**Avoid** account-specific *numeric* questions ("summarize this account's loss history") —
+those numbers live in the structured tables (Loss Development tab), not the document
+corpus, so the CoPilot can't cite them. Read loss history from the **Loss Development** tab.
 
 ---
 
