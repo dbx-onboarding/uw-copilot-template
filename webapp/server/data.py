@@ -313,6 +313,92 @@ def drivers_for(sub_id: str) -> List[Dict[str, Any]]:
     return [] if warehouse_ready() else _demo_drivers()
 
 
+def vehicles_for(sub_id: str) -> List[Dict[str, Any]]:
+    """Scheduled power units / equipment for the insured (surfaces the vehicles table)."""
+    insured = _insured_id_for(sub_id)
+    if insured:
+        sql = f"""
+            SELECT vehicle_id, year, make, model, vehicle_type, gvw, stated_value,
+                   radius_class, garage_state, has_dashcam, has_eld,
+                   last_inspection_date, inspection_result, annual_mileage
+            FROM {_fq('vehicles')} WHERE insured_id = '{_esc(insured)}'
+            ORDER BY year DESC LIMIT 200
+        """
+        rows = _rows_as_dicts(_run_sql(sql))
+        if rows:
+            return [{
+                "unit": r.get("vehicle_id"),
+                "vehicle": f"{r.get('year') or ''} {r.get('make') or ''} {r.get('model') or ''}".strip(),
+                "type": r.get("vehicle_type"),
+                "gvw": r.get("gvw"),
+                "value": _money(r.get("stated_value")),
+                "radius": r.get("radius_class"),
+                "state": r.get("garage_state"),
+                "dashcam": bool(r.get("has_dashcam")),
+                "eld": bool(r.get("has_eld")),
+                "inspection": r.get("inspection_result"),
+                "inspection_date": str(r.get("last_inspection_date") or "")[:10],
+                "mileage": r.get("annual_mileage"),
+            } for r in rows]
+    return [] if warehouse_ready() else _demo_vehicles()
+
+
+def policy_for(sub_id: str) -> Dict[str, Any]:
+    """Most recent policy on file for the insured (surfaces the policies table)."""
+    insured = _insured_id_for(sub_id)
+    if not insured:
+        return {} if warehouse_ready() else _demo_policy()
+    sql = f"""
+        SELECT policy_id, line_of_business, policy_status, effective_date, expiration_date,
+               written_premium, liability_limit, deductible, vehicles_covered, underwriter, territory
+        FROM {_fq('policies')} WHERE insured_id = '{_esc(insured)}'
+        ORDER BY expiration_date DESC LIMIT 1
+    """
+    rows = _rows_as_dicts(_run_sql(sql))
+    if not rows:
+        return {} if warehouse_ready() else _demo_policy()
+    r = rows[0]
+    return {
+        "policy_id": r.get("policy_id"),
+        "line": r.get("line_of_business"),
+        "status": r.get("policy_status"),
+        "effective": str(r.get("effective_date") or "")[:10],
+        "expiration": str(r.get("expiration_date") or "")[:10],
+        "written_premium": _money(r.get("written_premium")),
+        "liability_limit": r.get("liability_limit"),
+        "deductible": _money(r.get("deductible")),
+        "vehicles_covered": r.get("vehicles_covered"),
+        "underwriter": r.get("underwriter"),
+        "territory": r.get("territory"),
+    }
+
+
+def referrals_for(sub_id: str) -> List[Dict[str, Any]]:
+    """Referral history for this submission / insured (surfaces underwriting_referrals)."""
+    insured = _insured_id_for(sub_id)
+    where = f"submission_id = '{_esc(sub_id)}'"
+    if insured:
+        where += f" OR insured_id = '{_esc(insured)}'"
+    sql = f"""
+        SELECT referral_id, referral_date, referral_reason, referral_tier,
+               requesting_underwriter, approving_authority, decision, conditions, decision_date
+        FROM {_fq('underwriting_referrals')} WHERE {where}
+        ORDER BY referral_date DESC LIMIT 20
+    """
+    rows = _rows_as_dicts(_run_sql(sql))
+    return [{
+        "referral_id": r.get("referral_id"),
+        "date": str(r.get("referral_date") or "")[:10],
+        "reason": r.get("referral_reason"),
+        "tier": r.get("referral_tier"),
+        "by": r.get("requesting_underwriter"),
+        "authority": r.get("approving_authority"),
+        "decision": r.get("decision") or "Pending",
+        "conditions": r.get("conditions"),
+        "decided": str(r.get("decision_date") or "")[:10],
+    } for r in rows]
+
+
 def all_claims(limit: int = 200) -> List[Dict[str, Any]]:
     """Portfolio-wide claims (for the Claims section), joined to insured names."""
     sql = f"""
@@ -391,6 +477,58 @@ def documents_for(sub_id: str) -> List[Dict[str, Any]]:
             "date": str(r.get("parsed_at") or "")[:10],
         } for r in rows]
     return [] if warehouse_ready() else _demo_documents()
+
+
+def search_documents(query: str = "", category: str = "", limit: int = 60) -> Dict[str, Any]:
+    """
+    Full-text search over the parsed RAG corpus (parsed_documents), so an underwriter
+    can check whether a specific document has been ingested / indexed for retrieval.
+    Matches on file name, category and the extracted text.
+    """
+    q = (query or "").strip()
+    cat = (category or "").strip()
+    if not warehouse_ready():
+        docs = _demo_documents()
+        if q:
+            ql = q.lower()
+            docs = [d for d in docs if ql in (d.get("name", "") + " " + d.get("type", "")).lower()]
+        return {"documents": docs, "total": len(_demo_documents()),
+                "categories": sorted({d["type"] for d in _demo_documents()}), "persisted": False}
+
+    conds = []
+    if q:
+        ql = _esc(q.lower())
+        conds.append(f"(lower(file_name) LIKE '%{ql}%' OR lower(category) LIKE '%{ql}%' OR lower(parsed_text) LIKE '%{ql}%')")
+    if cat and cat.lower() != "all":
+        conds.append(f"category = '{_esc(cat)}'")
+    where = ("WHERE " + " AND ".join(conds)) if conds else ""
+
+    sql = f"""
+        SELECT file_name, category, page_count, parsed_at, source_path,
+               substr(parsed_text, 1, 260) AS preview
+        FROM {_fq('parsed_documents')}
+        {where}
+        ORDER BY parsed_at DESC LIMIT {int(limit)}
+    """
+    rows = _rows_as_dicts(_run_sql(sql))
+    items = [{
+        "name": r.get("file_name"),
+        "type": r.get("category"),
+        "pages": r.get("page_count"),
+        "status": "Indexed",
+        "date": str(r.get("parsed_at") or "")[:10],
+        "preview": (r.get("preview") or "").replace("\n", " ").strip(),
+        "path": r.get("source_path"),
+    } for r in rows]
+
+    total = None
+    tot = _rows_as_dicts(_run_sql(f"SELECT COUNT(*) AS n FROM {_fq('parsed_documents')}"))
+    if tot:
+        total = tot[0].get("n")
+    cats = _rows_as_dicts(_run_sql(
+        f"SELECT category, COUNT(*) AS n FROM {_fq('parsed_documents')} GROUP BY category ORDER BY n DESC"))
+    categories = [c.get("category") for c in cats if c.get("category")]
+    return {"documents": items, "total": total, "categories": categories, "persisted": True}
 
 
 # ── Rate adequacy / pricing ─────────────────────────────────────────────────────
@@ -769,6 +907,48 @@ def chat(question: str, history: List[Dict[str, str]], user_role: str,
         return {"answer": f"Unable to reach the CoPilot endpoint.\n\n_{e}_", "healthy": False}
 
 
+def log_conversation(user_id: str, session_id: str, question: str, answer: str) -> bool:
+    """Append the Q and A to conversation_sessions so history survives across sessions."""
+    if not warehouse_ready() or not (question and answer):
+        return False
+    now = datetime.now(timezone.utc)
+    q_ts = now.strftime("%Y-%m-%d %H:%M:%S")
+    a_ts = (now + timedelta(seconds=1)).strftime("%Y-%m-%d %H:%M:%S")
+    sql = f"""
+        INSERT INTO {_fq('conversation_sessions')} (session_id, role, content, user_id, created_at)
+        VALUES ('{_esc(session_id)}', 'user', '{_esc(question)}', '{_esc(user_id)}', TIMESTAMP '{q_ts}'),
+               ('{_esc(session_id)}', 'assistant', '{_esc(answer)}', '{_esc(user_id)}', TIMESTAMP '{a_ts}')
+    """
+    return _run_sql(sql) is not None
+
+
+def conversation_history(user_id: str, limit: int = 200) -> Dict[str, Any]:
+    """Return this user's past Q&A pairs (newest first) from conversation_sessions."""
+    if not warehouse_ready():
+        return {"items": [], "persisted": False}
+    sql = f"""
+        SELECT session_id, role, content, created_at
+        FROM {_fq('conversation_sessions')}
+        WHERE user_id = '{_esc(user_id)}' AND role IN ('user', 'assistant')
+        ORDER BY session_id ASC, created_at ASC
+        LIMIT {int(limit)}
+    """
+    rows = _rows_as_dicts(_run_sql(sql))
+    items: List[Dict[str, Any]] = []
+    pending = None
+    for r in rows:
+        role = r.get("role")
+        if role == "user":
+            pending = {"q": r.get("content"), "when": str(r.get("created_at") or "")[:16],
+                       "session": r.get("session_id"), "a": None}
+        elif role == "assistant" and pending is not None:
+            pending["a"] = r.get("content")
+            items.append(pending)
+            pending = None
+    items.reverse()  # newest first
+    return {"items": items, "persisted": True}
+
+
 def record_feedback(user_id: str, query: str, response: str, rating: str,
                     session_id: str, user_role: str) -> bool:
     """
@@ -1108,6 +1288,23 @@ def _demo_account_intel() -> Dict[str, Any]:
         "oos_vehicle_pct": 24.8, "national_oos_vehicle_avg": 20.7, "vehicle_oos_alert": True,
         "oos_driver_pct": 6.1, "national_oos_driver_avg": 5.5, "driver_oos_alert": True,
         "crash_rate_per_100": 3.1, "csa_as_of": "2026-06-01", "loss_runs_valued": "2026-05-15",
+    }
+
+
+def _demo_vehicles() -> List[Dict[str, Any]]:
+    return [
+        {"unit": "VEH-3001", "vehicle": "2023 Kenworth T680", "type": "Sleeper Tractor", "gvw": 80000, "value": "$165K", "radius": "Regional", "state": "IL", "dashcam": True, "eld": True, "inspection": "Pass", "inspection_date": "2026-04-15", "mileage": 115000},
+        {"unit": "VEH-3002", "vehicle": "2022 Freightliner Cascadia", "type": "Sleeper Tractor", "gvw": 80000, "value": "$148K", "radius": "Regional", "state": "IL", "dashcam": True, "eld": True, "inspection": "Pass", "inspection_date": "2026-04-15", "mileage": 120000},
+        {"unit": "VEH-3003", "vehicle": "2024 Peterbilt 579", "type": "Day Cab", "gvw": 80000, "value": "$172K", "radius": "Intermediate", "state": "MO", "dashcam": True, "eld": True, "inspection": "Pass", "inspection_date": "2026-04-15", "mileage": 95000},
+    ]
+
+
+def _demo_policy() -> Dict[str, Any]:
+    return {
+        "policy_id": "ACI-AL-25-732053", "line": "Commercial Auto Liability", "status": "Active",
+        "effective": "2025-07-01", "expiration": "2026-07-01", "written_premium": "$318K",
+        "liability_limit": "$1,000,000 CSL", "deductible": "$2,500", "vehicles_covered": 47,
+        "underwriter": "Sarah Mitchell", "territory": "Midwest",
     }
 
 

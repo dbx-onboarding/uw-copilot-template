@@ -296,18 +296,64 @@ export function AnalyticsView({ subs, kpis }) {
 
 // ── DOCUMENTS ────────────────────────────────────────────────────────────────────
 export function DocumentsView() {
-  const d = useLoad(api.allDocuments);
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState("All");
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const run = (query, category) => {
+    setLoading(true);
+    api.allDocuments(query, category === "All" ? "" : category)
+      .then((r) => setData(r)).catch(() => setData({ documents: [], total: 0, categories: [] }))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { run("", "All"); }, []);
+
+  const cats = ["All", ...((data?.categories) || [])];
+  const rows = data?.documents;
+
   return (
     <>
-      <PageHead title="Documents" sub="Parsed submission documents indexed for retrieval (Vector Search)." />
+      <PageHead title="Documents"
+        sub={data?.total != null
+          ? `Search the ${data.total.toLocaleString()} documents indexed in the Vector Search corpus — by name, category, or content.`
+          : "Search the RAG document corpus by name, category, or content."} />
+
+      <div className="toolbar" style={{ marginBottom: 14 }}>
+        <div className="search" style={{ flex: 1 }}>
+          <Icon.search width={16} height={16} />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") run(q, cat); }}
+            placeholder="Search documents — e.g. “Ironhorse loss run”, “MCS-90”, “fatigue policy”…"
+          />
+        </div>
+        <select className="doc-filter" value={cat} onChange={(e) => { setCat(e.target.value); run(q, e.target.value); }}>
+          {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <button className="btn primary" onClick={() => run(q, cat)}>Search</button>
+      </div>
+
       <div className="panel card-pad">
-        <Table rows={d?.documents} empty="No parsed documents available" cols={[
-          { k: "name", label: "Document" },
-          { k: "type", label: "Category" },
-          { k: "pages", label: "Pages", num: true },
-          { k: "status", label: "Status", render: (r) => <span className={`badge ${r.status === "Indexed" ? "low" : "neutral"}`}>{r.status}</span> },
-          { k: "date", label: "Date" },
-        ]} />
+        {loading ? <Spinner label="Searching corpus" /> : (
+          <>
+            <div style={{ fontSize: 12, color: "var(--subtle)", marginBottom: 10 }}>
+              {rows ? `${rows.length} match${rows.length === 1 ? "" : "es"}${q ? ` for “${q}”` : ""}` : ""}
+            </div>
+            <Table rows={rows} empty={q ? `No documents match “${q}” — it may not be in the corpus yet.` : "No parsed documents available"} cols={[
+              { k: "name", label: "Document", render: (r) => (
+                <div><div style={{ fontWeight: 600 }}>{r.name}</div>
+                  {r.preview && <div style={{ fontSize: 11.5, color: "var(--subtle)", marginTop: 2, maxWidth: 520, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.preview}</div>}
+                </div>
+              ) },
+              { k: "type", label: "Category" },
+              { k: "pages", label: "Pages", num: true },
+              { k: "status", label: "Status", render: (r) => <span className={`badge ${r.status === "Indexed" ? "low" : "neutral"}`}>{r.status}</span> },
+              { k: "date", label: "Indexed" },
+            ]} />
+          </>
+        )}
       </div>
     </>
   );

@@ -1,6 +1,16 @@
 // Shared presentational helpers + a tiny inline-SVG icon set (no icon dependency).
 import React from "react";
 
+// Brand: the real logo.png if present, else the inline SVG fallback.
+export function BrandLogo() {
+  const [err, setErr] = React.useState(false);
+  if (err) return <AtlasLogo />;
+  return (
+    <img className="rail-logo" src="/logo.png" alt="Atlas Commercial Insurance"
+         onError={() => setErr(true)} />
+  );
+}
+
 // Atlas Commercial Insurance brand mark (inline SVG — a globe/atlas emblem).
 export function AtlasLogo() {
   return (

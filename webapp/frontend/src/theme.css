@@ -74,6 +74,7 @@ body {
   position: sticky; top: 0; height: 100vh;
 }
 .rail-brand { display: flex; align-items: center; gap: 9px; padding: 16px 18px 10px; }
+.rail-logo { max-width: 170px; max-height: 40px; width: auto; height: auto; object-fit: contain; display: block; }
 .atlas-logo { display: flex; align-items: center; gap: 10px; }
 .atlas-logo .atlas-word { display: flex; flex-direction: column; line-height: 1.05; }
 .atlas-logo .atlas-word b { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; color: #fff; }
@@ -115,6 +116,7 @@ body {
 @media (max-width: 900px) {
   .rail { width: 62px; }
   .db-word, .atlas-word, .rail-ws, .rail-group, .rail-item span, .rail-foot { display: none; }
+  .rail-logo { max-width: 40px; }
   .rail-item { justify-content: center; }
   .crumbs { display: none; }
 }
@@ -138,9 +140,15 @@ body {
   border: 1px solid var(--brand); border-radius: 5px; padding: 2px 6px; width: 120px; outline: none; }
 .chat-tab.history { margin-left: auto; color: var(--muted); }
 .chat-tab.history.active { color: var(--text); }
+.doc-filter { background: var(--surface); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: var(--sans); cursor: pointer; }
+.hist-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+  color: var(--subtle); margin: 2px 2px 10px; }
 .hist-item { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px;
   background: var(--surface); cursor: pointer; }
+.hist-item.static { cursor: default; }
 .hist-item:hover { border-color: var(--muted); }
+.hist-item.static:hover { border-color: var(--border); }
 .hist-meta { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; color: var(--subtle); margin-bottom: 4px; }
 .hist-q { font-size: 13px; font-weight: 700; color: var(--text); }
 .hist-a { font-size: 12.5px; color: var(--muted); margin-top: 4px; line-height: 1.5;

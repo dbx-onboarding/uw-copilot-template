@@ -159,6 +159,21 @@ def loss_dev(sub_id: str):
     return data.loss_dev_for(sub_id)
 
 
+@app.get("/api/submissions/{sub_id}/vehicles")
+def vehicles(sub_id: str):
+    return {"vehicles": data.vehicles_for(sub_id)}
+
+
+@app.get("/api/submissions/{sub_id}/policy")
+def policy(sub_id: str):
+    return data.policy_for(sub_id)
+
+
+@app.get("/api/submissions/{sub_id}/referrals")
+def referrals(sub_id: str):
+    return {"referrals": data.referrals_for(sub_id)}
+
+
 @app.get("/api/submissions/{sub_id}/subjectivities")
 def subjectivities(sub_id: str):
     return data.subjectivities_for(sub_id)
@@ -302,8 +317,8 @@ def loss_control_route():
 
 
 @app.get("/api/documents")
-def all_documents_route():
-    return {"documents": data.documents_for("")}
+def all_documents_route(q: str = "", category: str = ""):
+    return data.search_documents(q, category)
 
 
 @app.get("/api/settings")
@@ -314,8 +329,22 @@ def settings_route(request: Request):
 @app.post("/api/chat")
 def chat(body: ChatBody, request: Request):
     ident = identity(request)
-    return data.chat(body.question, body.history, ident["role"], body.session_id,
-                     body.submission_id, body.submission_context or {})
+    result = data.chat(body.question, body.history, ident["role"], body.session_id,
+                       body.submission_id, body.submission_context or {})
+    # Persist the exchange to conversation_sessions so history survives tab close / device.
+    if result.get("healthy"):
+        try:
+            data.log_conversation(ident["email"] or ident["name"], body.session_id,
+                                  body.question, result.get("answer", ""))
+        except Exception:
+            pass
+    return result
+
+
+@app.get("/api/history")
+def history(request: Request):
+    ident = identity(request)
+    return data.conversation_history(ident["email"] or ident["name"])
 
 
 @app.post("/api/feedback")

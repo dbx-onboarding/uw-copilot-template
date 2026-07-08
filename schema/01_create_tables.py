@@ -407,5 +407,48 @@ print(f"  subjectivity_status OK")
 
 # COMMAND ----------
 
+# DBTITLE 1,Evaluation harness output (RAG quality / regression testing)
+spark.sql(f"""
+CREATE TABLE IF NOT EXISTS {C}.{S}.eval_results (
+    category         STRING  COMMENT 'Question category (e.g. Underwriting Guidelines)',
+    difficulty       STRING  COMMENT 'easy | medium | hard',
+    failed_checks    STRING  COMMENT 'JSON array of failed assertions',
+    intent           STRING  COMMENT 'retrieval | reasoning | hybrid',
+    passed           BOOLEAN,
+    question         STRING,
+    question_id      STRING,
+    response_length  BIGINT,
+    response_preview STRING,
+    response_time_s  DOUBLE,
+    role             STRING,
+    run_id           STRING  COMMENT 'Eval run identifier',
+    run_timestamp    STRING
+)
+COMMENT 'Per-question results from the CoPilot evaluation harness (model-quality regression).'
+""")
+print(f"  eval_results OK")
+
+spark.sql(f"""
+CREATE TABLE IF NOT EXISTS {C}.{S}.eval_results_latest (
+    request  STRING COMMENT 'Eval question',
+    response STRING COMMENT 'CoPilot response from the most recent eval run'
+)
+COMMENT 'Request/response pairs from the latest evaluation run (convenience view of eval_results).'
+""")
+print(f"  eval_results_latest OK")
+
+# COMMAND ----------
+
+# DBTITLE 1,Model Serving inference log (auto-provisioned — do NOT hand-create)
+# `{C}.{S}.atlas_insurance_rag_endpoint_payload` is the Model Serving inference
+# table. Databricks creates and manages it automatically when payload logging is
+# enabled on the serving endpoint (Serving > endpoint > Inference tables). It is
+# documented in the schema for completeness but must NOT be created manually here,
+# as doing so conflicts with the serving auto-provisioning. Enable it on the
+# endpoint instead; columns: databricks_request_id, request_date, request_time,
+# status_code, request, response, served_entity_id, requester, ...
+
+# COMMAND ----------
+
 print(f"\n✅ All tables created in {C}.{S}")
 display(spark.sql(f"SHOW TABLES IN {C}.{S}"))

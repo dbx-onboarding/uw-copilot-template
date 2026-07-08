@@ -34,6 +34,7 @@ export default function Chat({ submission, sessionId, toast, suggestions }) {
   const [busy, setBusy] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editVal, setEditVal] = useState("");
+  const [serverHist, setServerHist] = useState(null);
   const scrollRef = useRef(null);
 
   const persist = (arr) => {
@@ -65,6 +66,13 @@ export default function Chat({ submission, sessionId, toast, suggestions }) {
 
   const isHistory = activeId === HISTORY_ID;
   const active = chats.find((c) => c.id === activeId) || chats[0];
+
+  // Pull server-persisted history each time the History tab is opened.
+  useEffect(() => {
+    if (isHistory) {
+      api.history().then((r) => setServerHist(r.items || [])).catch(() => setServerHist([]));
+    }
+  }, [isHistory]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -216,22 +224,34 @@ export default function Chat({ submission, sessionId, toast, suggestions }) {
       </div>
 
       {isHistory ? (
-        <div className="chat-scroll">
-          {historyItems.length === 0 ? (
-            <div className="empty" style={{ margin: "auto 0" }}>
-              <div style={{ fontWeight: 600, color: "var(--muted)" }}>No questions yet</div>
-              <div style={{ fontSize: 12, color: "var(--subtle)" }}>Ask the CoPilot and your Q&amp;A history will collect here.</div>
+        (() => {
+          // Prefer server-persisted history (survives tab close / device); else local.
+          const useServer = serverHist && serverHist.length > 0;
+          const list = useServer
+            ? serverHist.map((h) => ({ q: h.q, a: h.a, meta: h.when, chatId: null }))
+            : historyItems.map((h) => ({ q: h.q, a: h.a, meta: h.chatTitle, chatId: h.chatId }));
+          return (
+            <div className="chat-scroll">
+              {serverHist === null && historyItems.length === 0 ? (
+                <div className="empty" style={{ margin: "auto 0" }}><span className="dots">Loading history</span></div>
+              ) : list.length === 0 ? (
+                <div className="empty" style={{ margin: "auto 0" }}>
+                  <div style={{ fontWeight: 600, color: "var(--muted)" }}>No questions yet</div>
+                  <div style={{ fontSize: 12, color: "var(--subtle)" }}>Ask the CoPilot and your Q&amp;A history will collect here.</div>
+                </div>
+              ) : (<>
+                <div className="hist-head">{useServer ? "Your saved history" : "This session"}</div>
+                {list.map((h, i) => (
+                  <div className={`hist-item ${h.chatId ? "" : "static"}`} key={i} onClick={() => h.chatId && setActiveId(h.chatId)}>
+                    <div className="hist-meta">{h.meta}</div>
+                    <div className="hist-q">Q: {h.q}</div>
+                    {h.a && <div className="hist-a">{h.a}</div>}
+                  </div>
+                ))}
+              </>)}
             </div>
-          ) : (
-            historyItems.map((h, i) => (
-              <div className="hist-item" key={i} onClick={() => setActiveId(h.chatId)}>
-                <div className="hist-meta">{h.chatTitle}</div>
-                <div className="hist-q">Q: {h.q}</div>
-                {h.a && <div className="hist-a">{h.a}</div>}
-              </div>
-            ))
-          )}
-        </div>
+          );
+        })()
       ) : (
         <div className="chat-scroll" ref={scrollRef}>
           {messages.length === 0 && !busy ? (

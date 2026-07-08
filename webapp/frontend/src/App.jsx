@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "./api.js";
-import { Icon, Spinner, AtlasLogo } from "./ui.jsx";
+import { Icon, Spinner, BrandLogo } from "./ui.jsx";
 import Queue from "./Queue.jsx";
 import Detail from "./Detail.jsx";
 import { HomeView, ClaimsView, LossControlView, AnalyticsView, DocumentsView, SettingsView } from "./Views.jsx";
@@ -57,7 +57,7 @@ export default function App() {
       {/* ── Databricks-style left navigation rail ─────────────────────────── */}
       <aside className="rail">
         <div className="rail-brand">
-          <AtlasLogo />
+          <BrandLogo />
         </div>
         <div className="rail-ws">
           <div className="ws-name">UW CoPilot</div>

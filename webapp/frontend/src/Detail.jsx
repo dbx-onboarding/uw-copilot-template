@@ -3,7 +3,7 @@ import { api } from "./api.js";
 import { Icon, RiskBadge, pct, Spinner } from "./ui.jsx";
 import Chat from "./Chat.jsx";
 
-const TABS = ["Overview", "Pricing", "Authority & Safety", "Claims", "Loss Development", "Drivers", "Subjectivities", "Documents", "Notes"];
+const TABS = ["Overview", "Pricing", "Authority & Safety", "Claims", "Loss Development", "Drivers", "Units", "Subjectivities", "Documents", "Notes"];
 
 const ACTION_CFG = {
   Approved: {
@@ -131,6 +131,7 @@ export default function Detail({ summary, sessionId, onBack, toast }) {
           {tab === "Claims" && <ClaimsTab id={detail.id} newBiz={detail.account_type === "New Business"} />}
           {tab === "Loss Development" && <LossDevTab id={detail.id} newBiz={detail.account_type === "New Business"} />}
           {tab === "Drivers" && <DriversTab id={detail.id} scheduled={detail.driver_count} newBiz={detail.account_type === "New Business"} />}
+          {tab === "Units" && <UnitsTab id={detail.id} scheduled={detail.fleet_size} newBiz={detail.account_type === "New Business"} />}
           {tab === "Subjectivities" && <SubjectivitiesTab id={detail.id} toast={toast} />}
           {tab === "Documents" && <DocumentsTab id={detail.id} />}
           {tab === "Notes" && (
@@ -198,6 +199,8 @@ function Overview({ detail, a, verdict, conf, decided, decide }) {
   ].filter(([, v]) => v != null && v !== "");
 
   const evidence = a.evidence || [];
+  const refs = useTabData(api.referrals, detail.id);
+  const refList = refs?.referrals || [];
   return (
     <>
       <div className="ai-card">
@@ -247,6 +250,22 @@ function Overview({ detail, a, verdict, conf, decided, decide }) {
           </>)}
         </div>
       </div>
+
+      {refList.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <div className="section-label">Referral History</div>
+          {refList.map((r, i) => (
+            <div className="risk-line" key={i} style={{ alignItems: "flex-start" }}>
+              <Icon.refer width={15} height={15} className="mk" />
+              <span>
+                <b>{r.date}</b> · {r.reason} → {r.tier}
+                {r.decision && <> · <b style={{ color: r.decision === "Declined" ? "var(--danger)" : "var(--success)" }}>{r.decision}</b></>}
+                {r.conditions && <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{r.conditions}</div>}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="actions-row">
         <button className="btn success" disabled={!!decided} onClick={() => decide("Approved")}>Approve</button>
@@ -446,6 +465,7 @@ function IntelRow({ label, value, alert }) {
 
 function AuthoritySafetyTab({ id, newBiz }) {
   const d = useTabData(api.accountIntel, id);
+  const p = useTabData(api.policy, id);
   if (d === null) return <Spinner />;
   if (!d || Object.keys(d).length === 0) {
     return <div className="empty" style={{ padding: 30 }}>{newBiz ? "New business — authority & FMCSA intel not yet loaded. Pull the SAFER/SMS snapshot and prior-carrier detail." : "No authority/FMCSA record on file."}</div>;
@@ -483,6 +503,17 @@ function AuthoritySafetyTab({ id, newBiz }) {
           Loss runs valued: {d.loss_runs_valued || "—"}<br />
           <span style={{ color: "var(--muted)" }}>⚠ marks metrics above the national average or a missing filing — verify before quoting.</span>
         </div>
+        {p && Object.keys(p).length > 0 && (<>
+          <div className="section-label" style={{ marginTop: 16 }}>Policy on File</div>
+          <table className="snap"><tbody>
+            <IntelRow label="Policy" value={p.policy_id || "—"} />
+            <IntelRow label="Line / status" value={`${p.line || "—"} · ${p.status || "—"}`} />
+            <IntelRow label="Term" value={p.effective ? `${p.effective} → ${p.expiration}` : "—"} />
+            <IntelRow label="Written premium" value={p.written_premium || "—"} />
+            <IntelRow label="Limit / deductible" value={`${p.liability_limit || "—"} · ${p.deductible || "—"}`} />
+            <IntelRow label="Units covered" value={p.vehicles_covered != null ? p.vehicles_covered : "—"} />
+          </tbody></table>
+        </>)}
       </div>
     </div>
   );
@@ -511,6 +542,34 @@ function DriversTab({ id, scheduled, newBiz }) {
     { k: "status", label: "Status" },
     { k: "hazmat", label: "HazMat", render: (r) => (r.hazmat ? "Yes" : "No") },
   ]} />
+   </>
+  );
+}
+
+function UnitsTab({ id, scheduled, newBiz }) {
+  const d = useTabData(api.vehicles, id);
+  const onFile = d?.vehicles?.length;
+  return (
+   <>
+    {scheduled != null && (
+      <div className="section-label" style={{ marginBottom: 8 }}>
+        {(onFile ?? 0)} unit{onFile === 1 ? "" : "s"} on file · {scheduled} power units per application
+      </div>
+    )}
+    <DataTable rows={d?.vehicles} empty={newBiz
+      ? "New business submission — equipment schedule not yet loaded. Review the vehicle schedule under Documents."
+      : "No vehicles linked to this submission (schedule pending upload)"} cols={[
+      { k: "unit", label: "Unit" },
+      { k: "vehicle", label: "Year / Make / Model" },
+      { k: "type", label: "Type" },
+      { k: "gvw", label: "GVW", num: true },
+      { k: "value", label: "Stated Value", num: true },
+      { k: "radius", label: "Radius" },
+      { k: "state", label: "Garaged" },
+      { k: "inspection", label: "Inspection", render: (r) => (
+        <span className={`badge ${r.inspection === "Pass" ? "low" : r.inspection === "Fail" ? "high" : "med"}`}>{r.inspection || "—"}</span>
+      ) },
+    ]} />
    </>
   );
 }
