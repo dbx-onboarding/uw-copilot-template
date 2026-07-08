@@ -171,7 +171,9 @@ body {
 .hist-meta { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; color: var(--subtle); margin-bottom: 4px; }
 .hist-q { font-size: 13px; font-weight: 700; color: var(--text); }
 .hist-a { font-size: 12.5px; color: var(--muted); margin-top: 4px; line-height: 1.5;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; }
+.hist-item.expanded .hist-a { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.hist-toggle { float: right; font-size: 10.5px; font-weight: 700; color: var(--brand); text-transform: none; letter-spacing: 0; }
 .mini-stats { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .mini-stat { font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 20px;
   background: var(--card); border: 1px solid var(--border); color: var(--muted); }

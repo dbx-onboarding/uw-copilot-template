@@ -35,6 +35,7 @@ export default function Chat({ submission, sessionId, toast, suggestions }) {
   const [editingId, setEditingId] = useState(null);
   const [editVal, setEditVal] = useState("");
   const [serverHist, setServerHist] = useState(null);
+  const [openHist, setOpenHist] = useState({});
   const scrollRef = useRef(null);
 
   const persist = (arr) => {
@@ -240,10 +241,11 @@ export default function Chat({ submission, sessionId, toast, suggestions }) {
                   <div style={{ fontSize: 12, color: "var(--subtle)" }}>Ask the CoPilot and your Q&amp;A history will collect here.</div>
                 </div>
               ) : (<>
-                <div className="hist-head">{useServer ? "Your saved history" : "This session"}</div>
+                <div className="hist-head">{useServer ? "Your saved history" : "This session"} · tap an item to expand</div>
                 {list.map((h, i) => (
-                  <div className={`hist-item ${h.chatId ? "" : "static"}`} key={i} onClick={() => h.chatId && setActiveId(h.chatId)}>
-                    <div className="hist-meta">{h.meta}</div>
+                  <div className={`hist-item ${openHist[i] ? "expanded" : ""}`} key={i}
+                       onClick={() => setOpenHist((o) => ({ ...o, [i]: !o[i] }))}>
+                    <div className="hist-meta">{h.meta}<span className="hist-toggle">{openHist[i] ? "▾ collapse" : "▸ expand"}</span></div>
                     <div className="hist-q">Q: {h.q}</div>
                     {h.a && <div className="hist-a">{h.a}</div>}
                   </div>
