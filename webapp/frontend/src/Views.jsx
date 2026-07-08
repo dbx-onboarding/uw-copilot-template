@@ -389,63 +389,137 @@ export function SettingsView() {
 }
 
 // ── ABOUT ───────────────────────────────────────────────────────────────────────
+function RagDiagram() {
+  const nodes = [
+    { x: 8, t: "Question", s: "underwriter asks", tone: "muted" },
+    { x: 196, t: "1 · Retrieve", s: "Vector Search", tone: "brand" },
+    { x: 384, t: "2 · Augment", s: "Atlas documents", tone: "brand" },
+    { x: 572, t: "3 · Generate", s: "Model Serving", tone: "brand" },
+    { x: 760, t: "Cited answer", s: "with sources", tone: "success" },
+  ];
+  const fill = { muted: "var(--elevated)", brand: "var(--brand-soft, rgba(255,54,33,0.12))", success: "var(--success-soft)" };
+  const stroke = { muted: "var(--border)", brand: "var(--brand)", success: "var(--success)" };
+  const txt = { muted: "var(--text)", brand: "var(--brand)", success: "var(--success)" };
+  return (
+    <svg viewBox="0 0 920 150" className="diagram" role="img" aria-label="RAG pipeline">
+      {nodes.slice(0, -1).map((n, i) => (
+        <g key={`a${i}`}>
+          <line x1={n.x + 152} y1={62} x2={nodes[i + 1].x - 6} y2={62} stroke="var(--muted)" strokeWidth="2" />
+          <path d={`M ${nodes[i + 1].x - 6} 62 l -9 -5 l 0 10 z`} fill="var(--muted)" />
+        </g>
+      ))}
+      {nodes.map((n, i) => (
+        <g key={i}>
+          <rect x={n.x} y={30} width="152" height="64" rx="12" fill={fill[n.tone]} stroke={stroke[n.tone]} strokeWidth="1.5" />
+          <text x={n.x + 76} y={60} textAnchor="middle" fontSize="15" fontWeight="800" fill={txt[n.tone]}>{n.t}</text>
+          <text x={n.x + 76} y={79} textAnchor="middle" fontSize="11.5" fill="var(--muted)">{n.s}</text>
+        </g>
+      ))}
+      <text x={460} y={128} textAnchor="middle" fontSize="12" fill="var(--subtle)">Grounded in Atlas's own documents — never the open internet. If the docs don't answer it, the CoPilot says so.</text>
+    </svg>
+  );
+}
+
+function ArchDiagram() {
+  const svc = [
+    { x: 40, t: "SQL Warehouse", s: "Delta tables — submissions, claims, drivers, units, loss runs" },
+    { x: 350, t: "Vector Search", s: "1,500 documents indexed for retrieval" },
+    { x: 660, t: "Model Serving", s: "RAG agent — grounded, cited answers" },
+  ];
+  return (
+    <svg viewBox="0 0 940 336" className="diagram" role="img" aria-label="Architecture">
+      {/* Unity Catalog governance container */}
+      <rect x="6" y="150" width="928" height="180" rx="16" fill="none" stroke="var(--brand)" strokeWidth="1.5" strokeDasharray="6 5" opacity="0.7" />
+      <text x="24" y="174" fontSize="12.5" fontWeight="800" fill="var(--brand)">UNITY CATALOG · governance · lineage · access control</text>
+
+      {/* User */}
+      <rect x="360" y="14" width="220" height="46" rx="12" fill="var(--elevated)" stroke="var(--border)" strokeWidth="1.5" />
+      <text x="470" y="36" textAnchor="middle" fontSize="14" fontWeight="800" fill="var(--text)">Underwriter</text>
+      <text x="470" y="52" textAnchor="middle" fontSize="11" fill="var(--muted)">Databricks SSO · role from Unity Catalog</text>
+
+      {/* App */}
+      <line x1="470" y1="60" x2="470" y2="78" stroke="var(--muted)" strokeWidth="2" />
+      <path d="M 470 84 l -5 -9 l 10 0 z" fill="var(--muted)" />
+      <rect x="300" y="84" width="340" height="50" rx="12" fill="var(--brand-soft, rgba(255,54,33,0.12))" stroke="var(--brand)" strokeWidth="1.6" />
+      <text x="470" y="106" textAnchor="middle" fontSize="14" fontWeight="800" fill="var(--brand)">UW CoPilot — Databricks App</text>
+      <text x="470" y="123" textAnchor="middle" fontSize="11" fill="var(--muted)">React workbench + FastAPI</text>
+
+      {/* Services */}
+      {svc.map((n, i) => (
+        <g key={i}>
+          <line x1="470" y1="134" x2={n.x + 120} y2="196" stroke="var(--muted)" strokeWidth="1.6" opacity="0.7" />
+          <rect x={n.x} y="196" width="240" height="66" rx="12" fill="var(--surface)" stroke="var(--border)" strokeWidth="1.5" />
+          <text x={n.x + 120} y="223" textAnchor="middle" fontSize="13.5" fontWeight="800" fill="var(--text)">{n.t}</text>
+          <text x={n.x + 120} y="242" textAnchor="middle" fontSize="10.8" fill="var(--muted)">{n.s.length > 42 ? n.s.slice(0, 42) : n.s}</text>
+        </g>
+      ))}
+
+      {/* Audit strip */}
+      <rect x="40" y="284" width="860" height="34" rx="9" fill="var(--elevated)" stroke="var(--border)" strokeWidth="1.2" />
+      <text x="470" y="305" textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--muted)">Audit log — every underwriting decision &amp; AI override recorded</text>
+    </svg>
+  );
+}
+
 export function AboutView() {
+  const stats = [
+    ["1,500+", "documents indexed"],
+    ["16", "Delta tables"],
+    ["9", "workbench sections"],
+    ["100%", "on the Lakehouse"],
+  ];
   const rag = [
-    { n: "1 · Retrieve", d: "Search Atlas's own document library for the passages most relevant to the question — by meaning, not just keywords (Vector Search)." },
+    { n: "1 · Retrieve", d: "Search Atlas's own library for the passages most relevant to the question — by meaning, not just keywords (Vector Search)." },
     { n: "2 · Augment", d: "Hand those exact passages to the AI as its source material for this question." },
-    { n: "3 · Generate", d: "The AI answers grounded in those passages and cites the source document and page. If the docs don't contain the answer, it says so." },
+    { n: "3 · Generate", d: "The AI answers grounded in those passages and cites the document and page — or says it doesn't know." },
   ];
   const features = [
     ["Home", "Portfolio KPIs and a decision-support CoPilot, plus a Portfolio Score that decomposes into its drivers."],
-    ["Submissions", "The working queue with AI score, risk, loss ratio, owner, New/Renewal, and SLA aging."],
-    ["Submission workbench", "AI recommendation with rule citations, Pricing & rate adequacy, Authority & FMCSA safety, Claims, Loss Development, Drivers, Units, Subjectivity clearing, and a grounded CoPilot."],
+    ["Submissions", "The working queue — AI score, risk, loss ratio, owner, New/Renewal, and SLA aging."],
+    ["Submission workbench", "Explainable AI recommendation with rule citations, Pricing & rate adequacy, Authority & FMCSA safety, Claims, Loss Development, Drivers, Units, Subjectivity clearing, and a grounded CoPilot."],
     ["Claims / Loss Control", "Portfolio-wide claim inventory and fleet-safety / CSA posture, each with drill-in detail."],
     ["Analytics", "Live book breakdowns by risk, operation, and premium at risk."],
     ["Documents", "Full-text search across the 1,500-document RAG corpus — confirm whether a document is indexed."],
     ["Quote letter", "One-click broker-ready PDF built from the recommended terms and subjectivities."],
     ["Governance", "Every decision and override written to an audit table; identity & access from Databricks SSO + Unity Catalog."],
   ];
-  const stack = [
-    ["Unity Catalog Delta tables", "Submissions, insureds, claims, drivers, units, loss runs, referrals, policies, and account intel — one governed source of truth."],
-    ["Vector Search", "The 1,500-document corpus, indexed for meaning so the CoPilot can retrieve the right passages."],
-    ["Model Serving", "Runs the RAG agent that generates grounded, cited answers."],
-    ["Databricks Apps", "Hosts this workbench; SSO identity and role come from the platform."],
-  ];
   return (
     <>
-      <PageHead title="About the Atlas UW CoPilot"
-        sub="What this app is, what RAG means in plain language, and how it's built." />
-
-      <div className="panel card-pad about-hero">
-        <div className="about-lead">A governed underwriting workbench on the Databricks Lakehouse.</div>
-        <p>The Atlas UW CoPilot brings a commercial-trucking submission — the structured data <em>and</em> 1,500+ underwriting documents — into one place, and puts an AI assistant beside the underwriter that <strong>explains its reasoning and cites its sources</strong>. Atlas Commercial Insurance is a fictional insurer used to build and demonstrate the capability end to end.</p>
+      {/* Hero */}
+      <div className="about-banner">
+        <div className="ab-eyebrow">DATABRICKS APP · COMMERCIAL AUTO UNDERWRITING</div>
+        <div className="ab-title">Atlas Underwriting CoPilot</div>
+        <div className="ab-sub">A governed underwriting workbench on the Databricks Lakehouse — every submission, claim, driver, unit and 1,500+ documents in one place, with an AI assistant that explains its reasoning and cites its sources.</div>
+        <div className="ab-stats">
+          {stats.map(([n, l]) => (<div className="ab-stat" key={l}><div className="abs-n">{n}</div><div className="abs-l">{l}</div></div>))}
+        </div>
       </div>
 
-      <div className="section-label" style={{ marginTop: 24 }}>What is RAG — in plain language</div>
+      {/* RAG */}
+      <div className="section-label" style={{ marginTop: 26 }}>What is RAG — in plain language</div>
       <div className="panel card-pad">
-        <p style={{ marginTop: 0 }}>A normal chatbot (like a raw ChatGPT) was trained on the public internet — it knows nothing about Atlas. Ask it <em>"what is Atlas's risk appetite?"</em> and it guesses. <strong>RAG — Retrieval-Augmented Generation</strong> fixes that: instead of answering from memory, we first pull the relevant pages from <em>our own</em> documents, hand them to the AI, and say <em>"answer using only these, and cite them."</em> Like handing a colleague the manual open to the right page instead of hoping they remember.</p>
+        <p style={{ marginTop: 0 }}>A normal chatbot (a raw ChatGPT) was trained on the public internet — it knows nothing about Atlas. Ask it <em>"what is Atlas's risk appetite?"</em> and it guesses. <strong>RAG — Retrieval-Augmented Generation</strong> fixes that: instead of answering from memory, we first pull the relevant pages from <em>our own</em> documents, hand them to the AI, and say <em>"answer using only these, and cite them"</em> — like handing a colleague the manual open to the right page.</p>
+        <RagDiagram />
         <div className="about-steps">
           {rag.map((s) => (<div className="about-step" key={s.n}><div className="as-n">{s.n}</div><div className="as-d">{s.d}</div></div>))}
         </div>
-        <p className="about-note">We loaded ~1,500 Atlas documents into Databricks, so the CoPilot answers questions about our appetite, rules, and procedures from Atlas's <strong>actual documents, with citations</strong> — and says "I don't know" rather than inventing an answer.</p>
       </div>
 
-      <div className="section-label" style={{ marginTop: 24 }}>Structured facts vs. institutional knowledge</div>
+      {/* Architecture */}
+      <div className="section-label" style={{ marginTop: 24 }}>Architecture — all on the Lakehouse</div>
       <div className="panel card-pad">
-        <p style={{ margin: 0 }}>Two sources, deliberately separated: the <strong>numbers</strong> — loss ratios, reserves, driver and unit schedules — live in Delta tables and appear in the workbench tabs. The <strong>knowledge</strong> — appetite, referral rules, procedures — lives in the documents and is what the <strong>CoPilot</strong> answers from. Ask the CoPilot about guidelines; read the numbers in the tabs.</p>
+        <ArchDiagram />
+        <p className="about-note">The <strong>numbers</strong> (loss ratios, reserves, driver &amp; unit schedules) live in Delta tables and show in the workbench tabs. The <strong>knowledge</strong> (appetite, rules, procedures) lives in the documents and is what the CoPilot answers from — with citations. No data leaves the platform.</p>
       </div>
 
+      {/* Features */}
       <div className="section-label" style={{ marginTop: 24 }}>What's inside</div>
       <div className="about-grid">
-        {features.map(([t, d]) => (<div className="about-card" key={t}><div className="ac-t">{t}</div><div className="ac-d">{d}</div></div>))}
+        {features.map(([t, d]) => (<div className="about-card" key={t}><div className="ac-dot" /><div><div className="ac-t">{t}</div><div className="ac-d">{d}</div></div></div>))}
       </div>
 
-      <div className="section-label" style={{ marginTop: 24 }}>How it's built</div>
-      <div className="about-grid">
-        {stack.map(([t, d]) => (<div className="about-card" key={t}><div className="ac-t">{t}</div><div className="ac-d">{d}</div></div>))}
-      </div>
-
-      <div className="panel card-pad" style={{ marginTop: 20 }}>
+      {/* Governance */}
+      <div className="panel card-pad about-trust" style={{ marginTop: 20 }}>
         <div className="section-label" style={{ marginTop: 0 }}>Trust &amp; governance</div>
         <p style={{ margin: 0 }}>Answers are grounded and cited; the AI recommendation shows the Atlas rule behind every factor and never hides behind a fabricated confidence score; every underwriting decision — and every time a human overrides the AI — is written to an audit table. Nothing leaves the Lakehouse, and access is controlled by Unity Catalog.</p>
       </div>

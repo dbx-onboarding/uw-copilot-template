@@ -141,18 +141,40 @@ body {
 .chat-tab.history { margin-left: auto; color: var(--muted); }
 .chat-tab.history.active { color: var(--text); }
 /* ── About page ──────────────────────────────────────────────────────────── */
-.about-hero .about-lead { font-size: 17px; font-weight: 800; color: var(--text); margin-bottom: 8px; letter-spacing: -0.2px; }
-.about-hero p, .panel.card-pad p { font-size: 13.5px; line-height: 1.65; color: var(--muted); }
-.about-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0 6px; }
-.about-step { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.panel.card-pad p { font-size: 13.5px; line-height: 1.65; color: var(--muted); }
+.about-banner { position: relative; overflow: hidden; border-radius: 16px; padding: 30px 34px 26px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(900px 300px at 12% -40%, rgba(255,54,33,0.22), transparent 60%),
+    radial-gradient(700px 260px at 100% 0%, rgba(106,139,255,0.14), transparent 55%),
+    linear-gradient(180deg, var(--panel), var(--surface)); }
+.about-banner::after { content: ""; position: absolute; inset: 0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px; opacity: 0.05; pointer-events: none; }
+.ab-eyebrow { position: relative; font-size: 11px; font-weight: 800; letter-spacing: 1.4px; color: var(--brand); }
+.ab-title { position: relative; font-size: 30px; font-weight: 900; letter-spacing: -0.8px; color: var(--text); margin: 8px 0 8px; }
+.ab-sub { position: relative; font-size: 14px; line-height: 1.6; color: var(--muted); max-width: 760px; }
+.ab-stats { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 22px; }
+.ab-stat { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; backdrop-filter: blur(2px); }
+.ab-stat .abs-n { font-size: 26px; font-weight: 900; letter-spacing: -0.5px;
+  background: linear-gradient(90deg, var(--brand), #ff7a63); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.ab-stat .abs-l { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.diagram { width: 100%; height: auto; display: block; margin: 6px 0 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-sizing: border-box; }
+.about-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0 2px; }
+.about-step { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; border-top: 2px solid var(--brand); }
 .about-step .as-n { font-size: 12px; font-weight: 800; color: var(--brand); margin-bottom: 5px; }
 .about-step .as-d { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
 .about-note { background: var(--elevated); border-left: 3px solid var(--brand); border-radius: 6px;
-  padding: 10px 14px; font-size: 13px !important; color: var(--text) !important; margin: 12px 0 0; }
+  padding: 10px 14px; font-size: 13px !important; color: var(--text) !important; margin: 14px 0 0; }
 .about-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.about-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.about-card { display: flex; gap: 11px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; transition: border-color 0.15s, transform 0.15s; }
+.about-card:hover { border-color: var(--brand); transform: translateY(-1px); }
+.about-card .ac-dot { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); margin-top: 6px;
+  box-shadow: 0 0 0 4px rgba(255,54,33,0.12); }
 .about-card .ac-t { font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
 .about-card .ac-d { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+.about-trust { border-left: 3px solid var(--success); }
 
 /* ── Feedback form + feed ────────────────────────────────────────────────── */
 .ff-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
