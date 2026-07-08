@@ -1,6 +1,25 @@
 // Shared presentational helpers + a tiny inline-SVG icon set (no icon dependency).
 import React from "react";
 
+// Atlas Commercial Insurance brand mark (inline SVG — a globe/atlas emblem).
+export function AtlasLogo() {
+  return (
+    <div className="atlas-logo">
+      <svg width="34" height="34" viewBox="0 0 40 40" fill="none" aria-hidden>
+        <rect width="40" height="40" rx="10" fill="var(--brand)" />
+        <circle cx="20" cy="20" r="11" stroke="#fff" strokeWidth="1.6" />
+        <ellipse cx="20" cy="20" rx="4.6" ry="11" stroke="#fff" strokeWidth="1.4" />
+        <line x1="9" y1="20" x2="31" y2="20" stroke="#fff" strokeWidth="1.4" />
+        <line x1="20" y1="9" x2="20" y2="31" stroke="#fff" strokeWidth="1.4" />
+      </svg>
+      <div className="atlas-word">
+        <b>Atlas</b>
+        <span>Commercial Insurance</span>
+      </div>
+    </div>
+  );
+}
+
 export const RISK = {
   High: { cls: "high", label: "HIGH", color: "var(--danger)" },
   Medium: { cls: "med", label: "MED", color: "var(--warn)" },
@@ -66,6 +85,7 @@ export const Icon = {
   folder: (p) => (<svg {...I(p)}><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></svg>),
   gear: (p) => (<svg {...I(p)}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></svg>),
   check: (p) => (<svg {...I(p)}><path d="M20 6 9 17l-5-5" /></svg>),
+  atlas: (p) => (<svg {...I(p)}><circle cx="12" cy="12" r="9" /><ellipse cx="12" cy="12" rx="4" ry="9" /><path d="M3.5 9h17M3.5 15h17" /></svg>),
   dollar: (p) => (<svg {...I(p)}><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>),
   clock: (p) => (<svg {...I(p)}><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>),
 };

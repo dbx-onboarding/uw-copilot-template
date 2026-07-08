@@ -74,6 +74,13 @@ body {
   position: sticky; top: 0; height: 100vh;
 }
 .rail-brand { display: flex; align-items: center; gap: 9px; padding: 16px 18px 10px; }
+.atlas-logo { display: flex; align-items: center; gap: 10px; }
+.atlas-logo .atlas-word { display: flex; flex-direction: column; line-height: 1.05; }
+.atlas-logo .atlas-word b { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; color: #fff; }
+.atlas-logo .atlas-word span { font-size: 9px; font-weight: 700; letter-spacing: 0.6px;
+  text-transform: uppercase; color: var(--subtle); margin-top: 2px; }
+.rail-ws .ws-sub .db-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--success); margin-right: 5px; vertical-align: middle; }
 .db-mark { width: 20px; height: 20px; border-radius: 5px; background: var(--brand);
   box-shadow: 0 0 0 3px rgba(255,54,33,0.16); display: inline-block; }
 .db-word { font-weight: 800; font-size: 15px; letter-spacing: -0.3px; color: #fff; }
@@ -107,7 +114,7 @@ body {
 
 @media (max-width: 900px) {
   .rail { width: 62px; }
-  .db-word, .rail-ws, .rail-group, .rail-item span, .rail-foot { display: none; }
+  .db-word, .atlas-word, .rail-ws, .rail-group, .rail-item span, .rail-foot { display: none; }
   .rail-item { justify-content: center; }
   .crumbs { display: none; }
 }

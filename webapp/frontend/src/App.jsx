@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "./api.js";
-import { Icon, Spinner } from "./ui.jsx";
+import { Icon, Spinner, AtlasLogo } from "./ui.jsx";
 import Queue from "./Queue.jsx";
 import Detail from "./Detail.jsx";
 import { HomeView, ClaimsView, LossControlView, AnalyticsView, DocumentsView, SettingsView } from "./Views.jsx";
@@ -57,12 +57,11 @@ export default function App() {
       {/* ── Databricks-style left navigation rail ─────────────────────────── */}
       <aside className="rail">
         <div className="rail-brand">
-          <span className="db-mark" aria-hidden />
-          <span className="db-word">databricks</span>
+          <AtlasLogo />
         </div>
         <div className="rail-ws">
-          <div className="ws-name">{me?.company || "Atlas Commercial Insurance"}</div>
-          <div className="ws-sub">Apps workspace</div>
+          <div className="ws-name">UW CoPilot</div>
+          <div className="ws-sub"><span className="db-dot" /> Databricks Apps</div>
         </div>
         <nav className="rail-nav">
           <div className="rail-group">UW COPILOT</div>
@@ -88,8 +87,6 @@ export default function App() {
       {/* ── Content column ────────────────────────────────────────────────── */}
       <div className="content">
         <header className="topbar">
-          <img className="app-logo" src="/logo.png" alt="Atlas Commercial Insurance"
-               onError={(e) => { e.currentTarget.style.display = "none"; }} />
           <div className="brand-text">
             <div className="t1">UW CoPilot</div>
             <div className="t2">{me?.company || "Atlas Commercial Insurance"}</div>
