@@ -127,6 +127,17 @@ body {
 .chat-tab .tab-x { display: inline-flex; align-items: center; justify-content: center; width: 16px;
   height: 16px; border-radius: 4px; font-size: 14px; line-height: 1; color: var(--muted); }
 .chat-tab .tab-x:hover { background: var(--border); color: var(--text); }
+.chat-tab .tab-edit { font-size: 12.5px; font-weight: 600; color: var(--text); background: var(--surface);
+  border: 1px solid var(--brand); border-radius: 5px; padding: 2px 6px; width: 120px; outline: none; }
+.chat-tab.history { margin-left: auto; color: var(--muted); }
+.chat-tab.history.active { color: var(--text); }
+.hist-item { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px;
+  background: var(--surface); cursor: pointer; }
+.hist-item:hover { border-color: var(--muted); }
+.hist-meta { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; color: var(--subtle); margin-bottom: 4px; }
+.hist-q { font-size: 13px; font-weight: 700; color: var(--text); }
+.hist-a { font-size: 12.5px; color: var(--muted); margin-top: 4px; line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .mini-stats { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .mini-stat { font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 20px;
   background: var(--card); border: 1px solid var(--border); color: var(--muted); }
