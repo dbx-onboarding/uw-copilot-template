@@ -3,7 +3,7 @@ import { api } from "./api.js";
 import { Icon, Spinner, BrandLogo } from "./ui.jsx";
 import Queue from "./Queue.jsx";
 import Detail from "./Detail.jsx";
-import { HomeView, ClaimsView, LossControlView, AnalyticsView, DocumentsView, SettingsView, FeedbackView } from "./Views.jsx";
+import { HomeView, ClaimsView, LossControlView, AnalyticsView, DocumentsView, SettingsView, FeedbackView, AboutView } from "./Views.jsx";
 
 // Databricks-style left-rail navigation.
 const NAV = [
@@ -13,6 +13,7 @@ const NAV = [
   { key: "loss_control", label: "Loss Control", icon: Icon.shield },
   { key: "analytics", label: "Analytics", icon: Icon.chart },
   { key: "documents", label: "Documents", icon: Icon.docs },
+  { key: "about", label: "About", icon: Icon.help },
   { key: "feedback", label: "Feedback", icon: Icon.mail },
   { key: "settings", label: "Settings", icon: Icon.gear },
 ];
@@ -129,6 +130,8 @@ export default function App() {
             <AnalyticsView subs={subs} kpis={kpis} />
           ) : nav === "documents" ? (
             <DocumentsView />
+          ) : nav === "about" ? (
+            <AboutView />
           ) : nav === "feedback" ? (
             <FeedbackView me={me} toast={toast} />
           ) : nav === "settings" ? (

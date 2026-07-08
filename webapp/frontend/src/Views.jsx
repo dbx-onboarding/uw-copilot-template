@@ -388,6 +388,71 @@ export function SettingsView() {
   );
 }
 
+// ── ABOUT ───────────────────────────────────────────────────────────────────────
+export function AboutView() {
+  const rag = [
+    { n: "1 · Retrieve", d: "Search Atlas's own document library for the passages most relevant to the question — by meaning, not just keywords (Vector Search)." },
+    { n: "2 · Augment", d: "Hand those exact passages to the AI as its source material for this question." },
+    { n: "3 · Generate", d: "The AI answers grounded in those passages and cites the source document and page. If the docs don't contain the answer, it says so." },
+  ];
+  const features = [
+    ["Home", "Portfolio KPIs and a decision-support CoPilot, plus a Portfolio Score that decomposes into its drivers."],
+    ["Submissions", "The working queue with AI score, risk, loss ratio, owner, New/Renewal, and SLA aging."],
+    ["Submission workbench", "AI recommendation with rule citations, Pricing & rate adequacy, Authority & FMCSA safety, Claims, Loss Development, Drivers, Units, Subjectivity clearing, and a grounded CoPilot."],
+    ["Claims / Loss Control", "Portfolio-wide claim inventory and fleet-safety / CSA posture, each with drill-in detail."],
+    ["Analytics", "Live book breakdowns by risk, operation, and premium at risk."],
+    ["Documents", "Full-text search across the 1,500-document RAG corpus — confirm whether a document is indexed."],
+    ["Quote letter", "One-click broker-ready PDF built from the recommended terms and subjectivities."],
+    ["Governance", "Every decision and override written to an audit table; identity & access from Databricks SSO + Unity Catalog."],
+  ];
+  const stack = [
+    ["Unity Catalog Delta tables", "Submissions, insureds, claims, drivers, units, loss runs, referrals, policies, and account intel — one governed source of truth."],
+    ["Vector Search", "The 1,500-document corpus, indexed for meaning so the CoPilot can retrieve the right passages."],
+    ["Model Serving", "Runs the RAG agent that generates grounded, cited answers."],
+    ["Databricks Apps", "Hosts this workbench; SSO identity and role come from the platform."],
+  ];
+  return (
+    <>
+      <PageHead title="About the Atlas UW CoPilot"
+        sub="What this app is, what RAG means in plain language, and how it's built." />
+
+      <div className="panel card-pad about-hero">
+        <div className="about-lead">A governed underwriting workbench on the Databricks Lakehouse.</div>
+        <p>The Atlas UW CoPilot brings a commercial-trucking submission — the structured data <em>and</em> 1,500+ underwriting documents — into one place, and puts an AI assistant beside the underwriter that <strong>explains its reasoning and cites its sources</strong>. Atlas Commercial Insurance is a fictional insurer used to build and demonstrate the capability end to end.</p>
+      </div>
+
+      <div className="section-label" style={{ marginTop: 24 }}>What is RAG — in plain language</div>
+      <div className="panel card-pad">
+        <p style={{ marginTop: 0 }}>A normal chatbot (like a raw ChatGPT) was trained on the public internet — it knows nothing about Atlas. Ask it <em>"what is Atlas's risk appetite?"</em> and it guesses. <strong>RAG — Retrieval-Augmented Generation</strong> fixes that: instead of answering from memory, we first pull the relevant pages from <em>our own</em> documents, hand them to the AI, and say <em>"answer using only these, and cite them."</em> Like handing a colleague the manual open to the right page instead of hoping they remember.</p>
+        <div className="about-steps">
+          {rag.map((s) => (<div className="about-step" key={s.n}><div className="as-n">{s.n}</div><div className="as-d">{s.d}</div></div>))}
+        </div>
+        <p className="about-note">We loaded ~1,500 Atlas documents into Databricks, so the CoPilot answers questions about our appetite, rules, and procedures from Atlas's <strong>actual documents, with citations</strong> — and says "I don't know" rather than inventing an answer.</p>
+      </div>
+
+      <div className="section-label" style={{ marginTop: 24 }}>Structured facts vs. institutional knowledge</div>
+      <div className="panel card-pad">
+        <p style={{ margin: 0 }}>Two sources, deliberately separated: the <strong>numbers</strong> — loss ratios, reserves, driver and unit schedules — live in Delta tables and appear in the workbench tabs. The <strong>knowledge</strong> — appetite, referral rules, procedures — lives in the documents and is what the <strong>CoPilot</strong> answers from. Ask the CoPilot about guidelines; read the numbers in the tabs.</p>
+      </div>
+
+      <div className="section-label" style={{ marginTop: 24 }}>What's inside</div>
+      <div className="about-grid">
+        {features.map(([t, d]) => (<div className="about-card" key={t}><div className="ac-t">{t}</div><div className="ac-d">{d}</div></div>))}
+      </div>
+
+      <div className="section-label" style={{ marginTop: 24 }}>How it's built</div>
+      <div className="about-grid">
+        {stack.map(([t, d]) => (<div className="about-card" key={t}><div className="ac-t">{t}</div><div className="ac-d">{d}</div></div>))}
+      </div>
+
+      <div className="panel card-pad" style={{ marginTop: 20 }}>
+        <div className="section-label" style={{ marginTop: 0 }}>Trust &amp; governance</div>
+        <p style={{ margin: 0 }}>Answers are grounded and cited; the AI recommendation shows the Atlas rule behind every factor and never hides behind a fabricated confidence score; every underwriting decision — and every time a human overrides the AI — is written to an audit table. Nothing leaves the Lakehouse, and access is controlled by Unity Catalog.</p>
+      </div>
+    </>
+  );
+}
+
 // ── FEEDBACK ────────────────────────────────────────────────────────────────────
 export function FeedbackView({ me, toast }) {
   const [name, setName] = useState(me?.name || "");
