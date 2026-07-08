@@ -425,7 +425,7 @@ export function FeedbackView({ me, toast }) {
           <label className="ff"><span>Company</span>
             <input value={anon ? "" : company} disabled={anon} onChange={(e) => setCompany(e.target.value)} placeholder={anon ? "Hidden (anonymous)" : "Company"} /></label>
         </div>
-        <label className="ff" style={{ display: "block", marginTop: 12 }}><span>Feedback</span>
+        <label className="ff ff-full"><span>Feedback</span>
           <textarea rows={5} value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="What did you like? What would make this better?" /></label>
         <label className="ff-check">
           <input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} />

@@ -142,13 +142,15 @@ body {
 .chat-tab.history.active { color: var(--text); }
 /* ── Feedback form + feed ────────────────────────────────────────────────── */
 .ff-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-.ff { display: flex; flex-direction: column; gap: 5px; }
+.ff { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.ff-full { margin-top: 12px; }
 .ff span { font-size: 11.5px; font-weight: 700; color: var(--muted); }
-.ff input, .ff textarea { background: var(--surface); color: var(--text); border: 1px solid var(--border);
-  border-radius: 8px; padding: 9px 11px; font-size: 13px; font-family: var(--sans); outline: none; }
+.ff input, .ff textarea { width: 100%; box-sizing: border-box; background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; font-size: 13px;
+  font-family: var(--sans); outline: none; }
 .ff input:focus, .ff textarea:focus { border-color: var(--brand); }
 .ff input:disabled { opacity: 0.5; }
-.ff textarea { resize: vertical; }
+.ff textarea { resize: vertical; min-height: 120px; display: block; }
 .ff-check { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--muted); cursor: pointer; }
 .ff-check input { width: 15px; height: 15px; accent-color: var(--brand); }
 .fb-feed { display: flex; flex-direction: column; gap: 10px; }
