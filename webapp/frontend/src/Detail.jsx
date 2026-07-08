@@ -3,7 +3,7 @@ import { api } from "./api.js";
 import { Icon, RiskBadge, pct, Spinner } from "./ui.jsx";
 import Chat from "./Chat.jsx";
 
-const TABS = ["Overview", "Claims", "Loss Runs", "Drivers", "Documents", "Notes"];
+const TABS = ["Overview", "Pricing", "Authority & Safety", "Claims", "Loss Development", "Drivers", "Documents", "Notes"];
 
 const ACTION_CFG = {
   Approved: {
@@ -126,8 +126,10 @@ export default function Detail({ summary, sessionId, onBack, toast }) {
             <Overview detail={detail} a={a} verdict={verdict} conf={conf}
                       decided={decided} decide={openModal} />
           )}
+          {tab === "Pricing" && <PricingTab id={detail.id} />}
+          {tab === "Authority & Safety" && <AuthoritySafetyTab id={detail.id} newBiz={detail.account_type === "New Business"} />}
           {tab === "Claims" && <ClaimsTab id={detail.id} newBiz={detail.account_type === "New Business"} />}
-          {tab === "Loss Runs" && <LossRunsTab id={detail.id} newBiz={detail.account_type === "New Business"} />}
+          {tab === "Loss Development" && <LossDevTab id={detail.id} newBiz={detail.account_type === "New Business"} />}
           {tab === "Drivers" && <DriversTab id={detail.id} scheduled={detail.driver_count} newBiz={detail.account_type === "New Business"} />}
           {tab === "Documents" && <DocumentsTab id={detail.id} />}
           {tab === "Notes" && (
@@ -194,17 +196,32 @@ function Overview({ detail, a, verdict, conf, decided, decide }) {
     ["Underwriter", detail.underwriter],
   ].filter(([, v]) => v != null && v !== "");
 
+  const evidence = a.evidence || [];
   return (
     <>
       <div className="ai-card">
-        <div className="head"><Icon.spark width={14} height={14} /> AI Recommendation</div>
-        <div className="ai-body">
-          <div className={`verdict ${verdict}`}>{verdict}</div>
-          <div className="conf-ring">
-            <div className="num">{conf}%</div>
-            <div className="cap">Confidence</div>
-          </div>
+        <div className="head">
+          <Icon.spark width={14} height={14} /> AI Recommendation
+          <span className="ai-sub">Decision support · underwriter decides</span>
         </div>
+        <div className="ai-body2">
+          <div className={`verdict ${verdict}`}>{verdict}</div>
+          <div className="conf-chip">Confidence <b>{a.confidence_label || "—"}</b></div>
+        </div>
+        {a.rationale && <div className="ai-rationale">{a.rationale}</div>}
+        {evidence.length > 0 && (
+          <div className="evidence">
+            {evidence.map((e, i) => (
+              <div className={`ev-row ${e.severity}`} key={i}>
+                <span className="ev-dot" />
+                <span className="ev-factor">{e.factor}</span>
+                <span className="ev-val">{e.value}</span>
+                <span className="ev-detail">{e.detail}</span>
+                <span className="ev-rule">{e.rule}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22 }}>
@@ -217,14 +234,16 @@ function Overview({ detail, a, verdict, conf, decided, decide }) {
           </table>
         </div>
         <div>
-          <div className="section-label">Key Risk Indicators</div>
-          {(a.risk_indicators || []).map((r, i) => (
-            <div className="risk-line" key={i}><Icon.alert width={15} height={15} className="mk" /><span>{r}</span></div>
-          ))}
-          <div className="section-label" style={{ marginTop: 18 }}>Recommended Next Steps</div>
+          <div className="section-label">Recommended Next Steps</div>
           {(a.next_steps || []).map((s, i) => (
             <div className="step-line" key={i}><span className="n">{i + 1}</span><span>{s}</span></div>
           ))}
+          {(a.subjectivities || []).length > 0 && (<>
+            <div className="section-label" style={{ marginTop: 18 }}>Recommended Subjectivities</div>
+            {a.subjectivities.map((s, i) => (
+              <div className="risk-line" key={i}><Icon.check width={14} height={14} className="mk" /><span>{s}</span></div>
+            ))}
+          </>)}
         </div>
       </div>
 
@@ -233,6 +252,10 @@ function Overview({ detail, a, verdict, conf, decided, decide }) {
         <button className="btn warn" disabled={!!decided} onClick={() => decide("Referred")}>Refer to Senior UW</button>
         <button className="btn danger" disabled={!!decided} onClick={() => decide("Declined")}>Decline</button>
         <button className="btn" onClick={() => decide("Info Requested")}>Request Info</button>
+        <button className="btn ghost" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+          onClick={() => window.open(`/api/submissions/${encodeURIComponent(detail.id)}/quote-letter`, "_blank")}>
+          <Icon.docs width={14} height={14} /> Quote Letter
+        </button>
         {decided && <span style={{ marginLeft: "auto", alignSelf: "center", fontSize: 13, color: "var(--success)", fontWeight: 600 }}>✓ {decided}</span>}
       </div>
     </>
@@ -280,16 +303,125 @@ function ClaimsTab({ id, newBiz }) {
   ]} />;
 }
 
-function LossRunsTab({ id, newBiz }) {
-  const d = useTabData(api.lossRuns, id);
-  return <DataTable rows={d?.loss_runs} empty={newBiz ? NEWBIZ_NOTE : "No loss runs on record"} cols={[
-    { k: "period", label: "Period" },
-    { k: "claims", label: "Claims", num: true },
-    { k: "large_losses", label: "Large Losses", num: true },
-    { k: "incurred", label: "Incurred", num: true },
-    { k: "earned_premium", label: "Earned Prem.", num: true },
-    { k: "loss_ratio", label: "Loss Ratio", num: true },
-  ]} />;
+function LossDevTab({ id, newBiz }) {
+  const d = useTabData(api.lossDev, id);
+  if (d === null) return <Spinner />;
+  const periods = d?.periods || [];
+  const s = d?.summary;
+  if (periods.length === 0) {
+    return <div className="empty" style={{ padding: 30 }}>{newBiz ? NEWBIZ_NOTE : "No loss runs on record"}</div>;
+  }
+  return (
+    <>
+      {s && (
+        <div className="mini-stats" style={{ marginBottom: 14 }}>
+          <span className={`mini-stat ${s.trend === "Deteriorating" ? "danger" : s.trend === "Improving" ? "" : ""}`}>Trend: {s.trend}</span>
+          <span className="mini-stat">{s.trend_detail}</span>
+          {s.total_large_losses > 0 && <span className="mini-stat warn">{s.total_large_losses} large loss{s.total_large_losses === 1 ? "" : "es"} (&ge;$100K)</span>}
+          <span className="mini-stat">Open reserves {s.open_reserves}</span>
+          <span className="mini-stat">Valued {s.valued_as_of}</span>
+        </div>
+      )}
+      <DataTable rows={periods} empty="No loss runs on record" cols={[
+        { k: "period", label: "Period" },
+        { k: "valued", label: "Valued" },
+        { k: "claims", label: "Claims", num: true },
+        { k: "large_losses", label: "Large", num: true },
+        { k: "incurred", label: "Incurred", num: true },
+        { k: "paid", label: "Paid", num: true },
+        { k: "open_reserves", label: "Open Res.", num: true },
+        { k: "loss_ratio", label: "Loss Ratio", num: true },
+        { k: "severity", label: "Severity", num: true },
+      ]} />
+      <div style={{ fontSize: 11.5, color: "var(--subtle)", marginTop: 8 }}>
+        Loss ratio = incurred ÷ earned premium. Severity = avg cost per claim. Figures as valued above — confirm current valuation before binding.
+      </div>
+    </>
+  );
+}
+
+function PricingTab({ id }) {
+  const d = useTabData(api.pricing, id);
+  if (d === null) return <Spinner />;
+  if (!d || Object.keys(d).length === 0) return <div className="empty" style={{ padding: 30 }}>Pricing indication unavailable.</div>;
+  const adqClass = d.adequacy === "Adequate" ? "low" : d.adequacy === "Marginal" ? "med" : d.adequacy === "Inadequate" ? "high" : "neutral";
+  const cards = [
+    ["Expiring premium", d.expiring_premium || "—"],
+    ["Indicated premium", d.indicated_premium || "—"],
+    ["Quoted premium", d.quoted_premium || "—"],
+    ["Rate need vs. expiring", d.rate_need_pct || "—"],
+    ["Rate taken (quoted)", d.rate_taken_pct || "—"],
+    ["Target loss ratio", d.target_loss_ratio || "—"],
+    ["Premium / unit (quoted)", d.premium_per_unit_quoted || "—"],
+    ["Indicated / unit", d.premium_per_unit_indicated || "—"],
+    ["Loss cost / unit (annual)", d.loss_cost_per_unit || "—"],
+  ];
+  return (
+    <>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <div className="section-label" style={{ margin: 0 }}>Rate Adequacy</div>
+        <span className={`badge ${adqClass}`}>{d.adequacy}</span>
+      </div>
+      <div className="pricing-grid">
+        {cards.map(([k, v]) => (
+          <div className="price-card" key={k}><div className="pc-val">{v}</div><div className="pc-lbl">{k}</div></div>
+        ))}
+      </div>
+      <div style={{ fontSize: 12, color: "var(--subtle)", marginTop: 12, lineHeight: 1.6 }}>
+        <b>Basis:</b> {d.basis}<br />{d.trend_note} Indicated premium brings expected losses to the {d.target_loss_ratio} target loss ratio. This is a working indication — confirm class rates and schedule mods in the rating workbook before quoting.
+      </div>
+    </>
+  );
+}
+
+function IntelRow({ label, value, alert }) {
+  return (
+    <tr><td>{label}</td><td className={alert ? "intel-alert" : ""}>{value}{alert ? "  ⚠" : ""}</td></tr>
+  );
+}
+
+function AuthoritySafetyTab({ id, newBiz }) {
+  const d = useTabData(api.accountIntel, id);
+  if (d === null) return <Spinner />;
+  if (!d || Object.keys(d).length === 0) {
+    return <div className="empty" style={{ padding: 30 }}>{newBiz ? "New business — authority & FMCSA intel not yet loaded. Pull the SAFER/SMS snapshot and prior-carrier detail." : "No authority/FMCSA record on file."}</div>;
+  }
+  const yn = (b) => (b ? "On file" : "Missing");
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22 }}>
+      <div>
+        <div className="section-label">Authority & Market</div>
+        <table className="snap"><tbody>
+          <IntelRow label="Operating authority since" value={d.authority_granted || "—"} />
+          <IntelRow label="Authority age" value={d.authority_age_years != null ? `${d.authority_age_years} yrs` : "—"} alert={d.new_authority} />
+          <IntelRow label="Prior / incumbent carrier" value={d.prior_carrier || "—"} />
+          <IntelRow label="Years with prior carrier" value={d.years_with_prior != null ? d.years_with_prior : "—"} />
+          <IntelRow label="Reason in market" value={d.reason_in_market || "—"} />
+          <IntelRow label="Operating radius" value={d.operating_radius || "—"} />
+        </tbody></table>
+        <div className="section-label" style={{ marginTop: 16 }}>Filings</div>
+        <table className="snap"><tbody>
+          <IntelRow label="MCS-150 current" value={d.mcs150_current ? "Current" : "Not current"} alert={!d.mcs150_current} />
+          <IntelRow label="MCS-90 endorsement" value={yn(d.mcs90_on_file)} alert={!d.mcs90_on_file} />
+          <IntelRow label="BMC-91 filing" value={yn(d.bmc91_on_file)} alert={!d.bmc91_on_file} />
+        </tbody></table>
+      </div>
+      <div>
+        <div className="section-label">FMCSA SMS Posture</div>
+        <table className="snap"><tbody>
+          <IntelRow label="Vehicle OOS rate" value={d.oos_vehicle_pct != null ? `${d.oos_vehicle_pct}% (nat'l ${d.national_oos_vehicle_avg}%)` : "—"} alert={d.vehicle_oos_alert} />
+          <IntelRow label="Driver OOS rate" value={d.oos_driver_pct != null ? `${d.oos_driver_pct}% (nat'l ${d.national_oos_driver_avg}%)` : "—"} alert={d.driver_oos_alert} />
+          <IntelRow label="Crash rate / 100 units" value={d.crash_rate_per_100 != null ? d.crash_rate_per_100 : "—"} />
+        </tbody></table>
+        <div style={{ fontSize: 12, color: "var(--subtle)", marginTop: 12, lineHeight: 1.6 }}>
+          <b>Data provenance</b><br />
+          FMCSA SMS snapshot: {d.csa_as_of || "—"}<br />
+          Loss runs valued: {d.loss_runs_valued || "—"}<br />
+          <span style={{ color: "var(--muted)" }}>⚠ marks metrics above the national average or a missing filing — verify before quoting.</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function DriversTab({ id, scheduled, newBiz }) {

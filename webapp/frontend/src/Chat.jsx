@@ -94,7 +94,7 @@ export default function Chat({ submission, sessionId, toast, suggestions }) {
           : {},
         history: next,
       });
-      patchActive((c) => ({ ...c, messages: [...next, { role: "assistant", content: res.answer }] }));
+      patchActive((c) => ({ ...c, messages: [...next, { role: "assistant", content: res.answer, sources: res.sources }] }));
     } catch {
       patchActive((c) => ({
         ...c,
@@ -161,6 +161,13 @@ export default function Chat({ submission, sessionId, toast, suggestions }) {
             <div key={i} className={`msg ${m.role}`}>
               <div className="who">{m.role === "user" ? "You" : "CoPilot"}</div>
               <div className="bubble">{m.content}</div>
+              {m.role === "assistant" && m.sources && m.sources.length > 0 && (
+                <div className="cite-row">
+                  {m.sources.map((s, k) => (
+                    <span className="cite" key={k}>📄 {s.title}{s.page ? ` · p.${s.page}` : ""}</span>
+                  ))}
+                </div>
+              )}
               {m.role === "assistant" && (
                 <div className="fb-row">
                   <button className={`fb-btn ${fb[i] === "thumbs_up" ? "done" : ""}`} onClick={() => rate(i, "thumbs_up")}>👍 Helpful</button>

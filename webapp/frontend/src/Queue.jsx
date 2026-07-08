@@ -5,7 +5,16 @@ const TABS = [
   { key: "all", label: "All" },
   { key: "ref", label: "Referrals" },
   { key: "high", label: "High Risk" },
+  { key: "renewals", label: "Renewals" },
+  { key: "overdue", label: "Overdue" },
 ];
+
+function AgingPill({ s }) {
+  const cls = s.aging === "Overdue" ? "overdue" : s.aging === "Due soon" ? "due" : "ontrack";
+  const label = s.aging || "—";
+  const days = s.days_in_queue != null ? `${s.days_in_queue}d` : "";
+  return <span className={`aging-pill ${cls}`}>{days} {label}</span>;
+}
 
 export default function Queue({ subs, onOpen }) {
   const [q, setQ] = useState("");
@@ -23,6 +32,8 @@ export default function Queue({ subs, onOpen }) {
     }
     if (tab === "ref") list = list.filter((s) => s.referral);
     if (tab === "high") list = list.filter((s) => s.risk === "High");
+    if (tab === "renewals") list = list.filter((s) => s.account_type === "Renewal");
+    if (tab === "overdue") list = list.filter((s) => s.aging === "Overdue" || s.aging === "Due soon");
     return list;
   }, [subs, q, tab]);
 
@@ -30,6 +41,8 @@ export default function Queue({ subs, onOpen }) {
     all: subs.length,
     ref: subs.filter((s) => s.referral).length,
     high: subs.filter((s) => s.risk === "High").length,
+    renewals: subs.filter((s) => s.account_type === "Renewal").length,
+    overdue: subs.filter((s) => s.aging === "Overdue" || s.aging === "Due soon").length,
   };
 
   return (
@@ -67,12 +80,13 @@ export default function Queue({ subs, onOpen }) {
             <thead>
               <tr>
                 <th>Company</th>
-                <th>Operation</th>
+                <th>Type</th>
                 <th>Risk</th>
                 <th>AI Score</th>
-                <th>Fleet</th>
                 <th>Loss Ratio</th>
                 <th>Premium</th>
+                <th>Owner</th>
+                <th>Aging</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -86,12 +100,13 @@ export default function Queue({ subs, onOpen }) {
                     </div>
                     <div className="q-sub">{s.id} · {s.broker || "—"}</div>
                   </td>
-                  <td style={{ color: "var(--muted)" }}>{s.operation || s.lob}</td>
+                  <td>{s.account_type ? <span className={`badge ${s.account_type === "Renewal" ? "renewal" : "newbiz"}`}>{s.account_type === "Renewal" ? "RENEWAL" : "NEW"}</span> : <span style={{ color: "var(--muted)" }}>{s.operation || s.lob}</span>}</td>
                   <td><RiskBadge risk={s.risk} /></td>
                   <td><ScoreBar score={s.score} /></td>
-                  <td>{s.fleet_size ?? "—"}</td>
                   <td>{pct(s.loss_ratio)}</td>
                   <td style={{ fontWeight: 600 }}>{s.premium || "—"}</td>
+                  <td style={{ color: "var(--muted)" }}>{s.owner || s.underwriter || "—"}</td>
+                  <td>{s.aging ? <AgingPill s={s} /> : "—"}</td>
                   <td style={{ color: "var(--muted)" }}>{s.status}</td>
                 </tr>
               ))}

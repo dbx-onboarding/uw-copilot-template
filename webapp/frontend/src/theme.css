@@ -270,6 +270,46 @@ body {
 .badge.renewal { background: var(--success-soft); color: var(--success); border: 1px solid rgba(34,201,138,0.3); }
 .badge.newbiz { background: var(--info-soft); color: var(--info); border: 1px solid rgba(106,139,255,0.3); }
 
+/* ── AI recommendation card (evidence-first) ─────────────────────────────── */
+.ai-sub { font-size: 11px; font-weight: 600; color: var(--subtle); text-transform: none; letter-spacing: 0; margin-left: 8px; }
+.ai-body2 { display: flex; align-items: center; gap: 12px; margin: 4px 0 10px; }
+.conf-chip { font-size: 12px; color: var(--muted); background: var(--elevated); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; }
+.conf-chip b { color: var(--text); margin-left: 4px; }
+.ai-rationale { font-size: 13px; color: var(--text); line-height: 1.55; margin-bottom: 12px; }
+.evidence { display: flex; flex-direction: column; gap: 6px; }
+.ev-row { display: grid; grid-template-columns: 10px 128px 66px 1fr auto; align-items: center; gap: 10px;
+  font-size: 12.5px; padding: 6px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); }
+.ev-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.ev-row.adverse .ev-dot { background: var(--danger); }
+.ev-row.caution .ev-dot { background: var(--warn); }
+.ev-row.positive .ev-dot { background: var(--success); }
+.ev-factor { font-weight: 700; color: var(--text); }
+.ev-val { font-weight: 700; color: var(--text); }
+.ev-detail { color: var(--muted); }
+.ev-rule { font-size: 11px; color: var(--subtle); font-family: var(--mono, monospace); white-space: nowrap; }
+
+/* ── Pricing grid ────────────────────────────────────────────────────────── */
+.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.price-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm, 10px); padding: 14px 16px; }
+.pc-val { font-size: 20px; font-weight: 800; color: var(--text); }
+.pc-lbl { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+
+/* ── Intel alerts + queue aging ──────────────────────────────────────────── */
+.intel-alert { color: var(--danger); font-weight: 700; }
+.aging-pill { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; }
+.aging-pill.overdue { background: var(--danger-soft); color: var(--danger); }
+.aging-pill.due { background: var(--warn-soft); color: var(--warn); }
+.aging-pill.ontrack { background: var(--elevated); color: var(--subtle); }
+
+/* ── Chat citations + portfolio score breakdown ──────────────────────────── */
+.cite-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.cite { font-size: 11px; color: var(--muted); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 3px 8px; }
+.score-break { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+.score-line { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; color: var(--muted); }
+.score-line .pen { color: var(--danger); font-weight: 700; }
+.score-formula { font-size: 11px; color: var(--subtle); font-family: var(--mono, monospace); margin-top: 6px; }
+
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
 .btn { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: var(--radius-sm);
   border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 7px; }

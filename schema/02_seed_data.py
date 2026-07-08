@@ -246,6 +246,22 @@ print("  underwriting_referrals: 5")
 
 # COMMAND ----------
 
+# MAGIC %md ## Account Intel (authority, filings, market reason, FMCSA SMS)
+
+# COMMAND ----------
+
+# DBTITLE 1,Cell 22
+# National FMCSA OOS averages (approx): vehicle ~20.7%, driver ~5.5%.
+spark.sql(f"""INSERT INTO {C}.{S}.account_intel VALUES ('INS-1002','2011-04-12','Golden State Mutual',6,'Rate increase at renewal (>20%) — testing the market','Long Haul (>500 mi)',true,true,true,24.8,6.1,20.7,5.5,3.10,'2026-06-01','2026-05-15'),
+('INS-1005','2023-02-01','First-time buyer / new authority',1,'New venture seeking first commercial auto program','Local (<100 mi)',true,true,false,31.5,9.4,20.7,5.5,7.80,'2026-06-01','2026-05-20'),
+('INS-1006','2008-06-01','Rocky Mountain Casualty',7,'Incumbent non-renewing the class — marketing for capacity','Regional (100-500 mi)',true,true,true,15.2,4.1,20.7,5.5,1.90,'2026-06-01','2026-06-01'),
+('INS-1007','2019-08-15','Eastern Mutual Group',3,'Adverse loss experience — carrier issued non-renewal notice','Regional (100-500 mi)',true,true,true,28.9,7.7,20.7,5.5,5.40,'2026-05-01','2026-04-30'),
+('INS-1013','2026-05-01','First-time buyer / new authority',0,'New authority — first commercial auto placement','Regional (100-500 mi)',true,true,false,18.0,5.0,20.7,5.5,2.50,'2026-06-20','2026-06-15'),
+('INS-1014','2012-05-01','Southeast Mutual Insurance',9,'Long-standing account testing market at renewal','Long Haul (>500 mi)',true,true,true,17.6,4.8,20.7,5.5,2.20,'2026-06-01','2026-05-25')""")
+print("  account_intel: 6")
+
+# COMMAND ----------
+
 display(spark.sql(f"""
 SELECT 'insureds' AS tbl, COUNT(*) AS n FROM {C}.{S}.insureds
 UNION ALL SELECT 'policies', COUNT(*) FROM {C}.{S}.policies
@@ -255,6 +271,7 @@ UNION ALL SELECT 'claims', COUNT(*) FROM {C}.{S}.claims
 UNION ALL SELECT 'submissions', COUNT(*) FROM {C}.{S}.submissions
 UNION ALL SELECT 'loss_runs', COUNT(*) FROM {C}.{S}.loss_runs
 UNION ALL SELECT 'underwriting_referrals', COUNT(*) FROM {C}.{S}.underwriting_referrals
+UNION ALL SELECT 'account_intel', COUNT(*) FROM {C}.{S}.account_intel
 ORDER BY tbl
 """))
 print("\n✅ Seed data complete")

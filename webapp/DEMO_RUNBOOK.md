@@ -15,6 +15,9 @@ Insurance **UW CoPilot** (Databricks App) to a Chief Underwriting Officer / CEO.
    npm --prefix frontend install && npm --prefix frontend run build
    # deploy the webapp/ folder as the Databricks App (uvicorn server.main:app)
    ```
+1a. **Re-run the schema notebooks** (`schema/01_create_tables.py` then
+   `schema/02_seed_data.py`) so the new **`account_intel`** table and the Dixie Express
+   renewal history are present. Without this, the Authority & Safety tab is empty.
 2. **Warm the services** (or the AI story falls flat). Open **Settings** in the app —
    all three should read **Connected**:
    - SQL Warehouse (running, not cold)
@@ -39,13 +42,23 @@ fallback message.
 2. **Submissions** — the working queue. Point out AI Score, Risk badge, Loss Ratio,
    Status. Click a **company name** to open its workbench.
 3. **Submission workbench (detail)** — the centerpiece:
-   - **AI Recommendation** (APPROVE / REFER / DECLINE) + confidence.
-   - **Risk Indicators** and **Recommended Next Steps** (generated from Atlas rules).
-   - Tabs: **Claims · Loss Runs · Drivers · Documents** — all live from Delta tables.
-   - **CoPilot** (right) — ask *"Summarize the loss history"* or *"Any referral triggers?"*;
-     answers are grounded in the submission's documents with citations.
-   - Take a decision: **Refer to Senior UW** → it records to the audit log
-     (or shows a demo notice if no warehouse).
+   - **AI Recommendation** — evidence-first: verdict (APPROVE / REVIEW / REFER), a
+     qualitative **Confidence** (High/Moderate/Low — no fake %), a plain-language
+     **rationale**, and an **evidence list** where each factor cites the Atlas rule that
+     fired (RA-0001 §4.2, UW-0001 §6, AUTH-0001…). It explains itself and doesn't anchor.
+   - **Recommended Next Steps** and **Recommended Subjectivities** (quote conditions).
+   - Tabs: **Pricing · Authority & Safety · Claims · Loss Development · Drivers · Documents**.
+     - **Pricing** — indicated premium, rate need vs. expiring, rate taken, and an
+       **Adequate / Marginal / Inadequate** verdict with per-unit metrics.
+     - **Authority & Safety** — authority age (new-authority flag), prior carrier, **why
+       in market**, filings (MCS-150 / MCS-90 / BMC-91), and FMCSA SMS OOS rates vs.
+       national average with ⚠ alerts + data as-of dates.
+     - **Loss Development** — trend, severity, open reserves, large-loss count, and the
+       **valued-as-of** date on every figure.
+   - **CoPilot** (right) — answers are grounded in the account's documents and end with a
+     **Sources:** line (document + page). Multiple **chat tabs** keep parallel threads.
+   - Take a decision: **Refer to Senior UW** → records to the audit log (demo notice if
+     no warehouse).
 4. **Claims** — portfolio-wide claim inventory; click a claim for the detail modal
    (narrative, incurred/paid, reserve, litigation).
 5. **Loss Control** — fleet safety / CSA posture per insured; click a row for the

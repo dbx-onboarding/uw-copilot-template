@@ -362,5 +362,32 @@ print(f"  feedback_overrides OK")
 
 # COMMAND ----------
 
+# DBTITLE 1,Account intel (authority, filings, prior carrier, FMCSA SMS)
+spark.sql(f"""
+CREATE TABLE IF NOT EXISTS {C}.{S}.account_intel (
+    insured_id               STRING  NOT NULL,
+    authority_granted_date   DATE    COMMENT 'FMCSA operating authority grant date',
+    prior_carrier            STRING  COMMENT 'Expiring / incumbent carrier',
+    years_with_prior         INT,
+    reason_in_market         STRING  COMMENT 'Why the account is shopping',
+    operating_radius         STRING  COMMENT 'Local, Intermediate, Long Haul radius band',
+    mcs150_current           BOOLEAN COMMENT 'MCS-150 biennial update current',
+    mcs90_on_file            BOOLEAN COMMENT 'BMC/MCS-90 financial responsibility endorsement',
+    bmc91_on_file            BOOLEAN COMMENT 'BMC-91/91X filing on file',
+    oos_vehicle_pct          DECIMAL(5,1) COMMENT 'Vehicle out-of-service rate %',
+    oos_driver_pct           DECIMAL(5,1) COMMENT 'Driver out-of-service rate %',
+    national_oos_vehicle_avg DECIMAL(5,1) COMMENT 'National avg vehicle OOS %',
+    national_oos_driver_avg  DECIMAL(5,1) COMMENT 'National avg driver OOS %',
+    crash_rate_per_100       DECIMAL(6,2) COMMENT 'DOT-recordable crashes per 100 power units / yr',
+    csa_as_of                DATE    COMMENT 'FMCSA SMS snapshot date',
+    loss_runs_valued         DATE    COMMENT 'As-of valuation date of loss runs on file',
+    CONSTRAINT pk_account_intel PRIMARY KEY (insured_id)
+)
+COMMENT 'Underwriting intelligence: authority, filings, market reason, FMCSA SMS posture.'
+""")
+print(f"  account_intel OK")
+
+# COMMAND ----------
+
 print(f"\n✅ All tables created in {C}.{S}")
 display(spark.sql(f"SHOW TABLES IN {C}.{S}"))

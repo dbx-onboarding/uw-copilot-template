@@ -76,22 +76,41 @@ function PageHead({ title, sub }) {
 
 // ── HOME: KPIs + CoPilot only ─────────────────────────────────────────────────
 export function HomeView({ kpis, sessionId, toast }) {
+  const [showBreak, setShowBreak] = useState(false);
+  const bd = kpis.portfolio_score_breakdown;
   return (
     <>
       <div className="kpi-grid">
         {KPI_META.map((k) => {
           const meta = KPI_ICONS[k.key];
           const IconC = meta.icon;
+          const clickable = k.key === "portfolio_score" && bd;
           return (
-            <div className="kpi" key={k.key}>
+            <div className={`kpi ${clickable ? "clickable-row" : ""}`} key={k.key}
+                 onClick={clickable ? () => setShowBreak((v) => !v) : undefined}>
               <div className="ico" style={{ background: meta.bg, color: meta.tint }}><IconC width={18} height={18} /></div>
               <div className="val">{kpis[k.key] ?? "—"}</div>
-              <div className="lbl">{k.label}</div>
+              <div className="lbl">{k.label}{clickable && <span style={{ color: "var(--subtle)", fontWeight: 500 }}> · how?</span>}</div>
               <div className={`kpi-tag ${k.tag}`}>{k.tag === "derived" ? "live · derived" : "live · from queue"}</div>
             </div>
           );
         })}
       </div>
+      {showBreak && bd && (
+        <div className="panel card-pad" style={{ marginBottom: 20 }}>
+          <div className="section-label">How the Portfolio Score is computed</div>
+          <div className="score-line"><span>Base</span><span>{bd.base}</span></div>
+          {bd.components.map((c, i) => (
+            <div className="score-line" key={i}>
+              <span>{c.label} ({c.value})</span><span className="pen">{c.penalty}</span>
+            </div>
+          ))}
+          <div className="score-line" style={{ borderTop: "1px solid var(--border)", marginTop: 4, paddingTop: 6, fontWeight: 700, color: "var(--text)" }}>
+            <span>Portfolio Score</span><span>{bd.score}</span>
+          </div>
+          <div className="score-formula">{bd.formula}</div>
+        </div>
+      )}
       <div className="home-copilot">
         <Chat submission={{ name: "the Atlas portfolio", id: "" }} sessionId={sessionId} toast={toast} suggestions={HOME_SUGGESTIONS} />
       </div>

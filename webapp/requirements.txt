@@ -3,3 +3,4 @@ uvicorn[standard]>=0.29
 pydantic>=2.6
 databricks-sdk>=0.40.0
 pyyaml>=6.0
+reportlab>=4.0
